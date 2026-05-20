@@ -447,26 +447,42 @@ function init() {
     document.getElementById('userBadge').textContent = '\u{1F464} ' + currentUser;
     document.getElementById('logoutBtn').style.display = 'inline-block';
   }
-  // participants dropdown is populated from Supabase in loadFromSupabase()
   renderGroups(); renderMatches(); renderTodayMatches(); renderLeaderboard();
   document.getElementById('dataSource').textContent = db ? '⏳ Connecting to Supabase…' : '\u{1F4CB} Using built-in data (Supabase SDK not loaded)';
-  loadFromSupabase();
+  // Load participants first (populates dropdown), then load the rest
+  loadParticipants().then(() => loadFromSupabase());
 }
 
 // ── SUPABASE LOAD ─────────────────────────────────────────────
+
+// Step 1: Always load participants first so the dropdown is never empty
+async function loadParticipants() {
+  if (!db) { populateUserSelect(); return; }
+  try {
+    // Query name only — always works even if pin column doesn't exist yet
+    const {data, error} = await db.from('participants').select('name').order('id');
+    if (error) throw error;
+    if (data && data.length) {
+      participants = data.map(p => p.name);
+      localStorage.setItem('fifa_participants', JSON.stringify(participants));
+    }
+    // Now try to also fetch PINs (only works after ALTER TABLE has been run)
+    const {data:pinData} = await db.from('participants').select('name, pin').order('id');
+    if (pinData && pinData.length) {
+      participantData = pinData;
+      localStorage.setItem('fifa_participant_data', JSON.stringify(participantData));
+    }
+  } catch(err) {
+    console.warn('Participant load error:', err.message);
+    // Fall back to localStorage cache — dropdown still gets populated below
+  }
+  populateUserSelect(); // Always called, regardless of success or failure
+}
+
 async function loadFromSupabase() {
   const src = document.getElementById('dataSource');
   if (!db) { src.textContent = '\u{1F4CB} Built-in data (Supabase unavailable)'; return; }
   try {
-    const {data:parts,error:e1} = await db.from('participants').select('name, pin').order('id');
-    if (e1) throw e1;
-    if (parts && parts.length) {
-      participantData = parts;
-      participants = parts.map(p => p.name);
-      localStorage.setItem('fifa_participants', JSON.stringify(participants));
-      localStorage.setItem('fifa_participant_data', JSON.stringify(participantData));
-      populateUserSelect();
-    }
     const {data:preds,error:e2} = await db.from('predictions').select('*');
     if (e2) throw e2;
     if (preds && preds.length) {
@@ -618,11 +634,8 @@ async function addPlayer() {
     }
   }
 
-  participantData.push({name, pin});
-  participants.push(name);
-  localStorage.setItem('fifa_participants', JSON.stringify(participants));
-  localStorage.setItem('fifa_participant_data', JSON.stringify(participantData));
-  populateUserSelect();
+  // Re-fetch from Supabase so the dropdown is always in sync with the DB
+  await loadParticipants();
 
   // Hide spinner, show success
   document.getElementById('addPlayerSpinner').style.display = 'none';
