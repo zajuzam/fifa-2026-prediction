@@ -428,7 +428,7 @@ const GROUPS = {
 
 // ── STATE ─────────────────────────────────────────────────────
 let matches = RAW_MATCHES.map(m => ({id:m[0],stage:m[1],group:m[2],date:m[3],time:m[4],team1:m[5],team2:m[6],venue:m[7]}));
-let participants    = JSON.parse(localStorage.getItem('fifa_participants')     || '["Saju"]');
+let participants    = JSON.parse(localStorage.getItem('fifa_participants')     || '[]');
 let participantData = JSON.parse(localStorage.getItem('fifa_participant_data') || '[]');
 let predictions     = JSON.parse(localStorage.getItem('fifa_predictions')      || '{}');
 let actualScores    = JSON.parse(localStorage.getItem('fifa_actual')           || '{}');
@@ -440,6 +440,12 @@ const ADMIN_PASS    = 'admin123';
 
 // ── INIT ──────────────────────────────────────────────────────
 function init() {
+  // Clear stale hardcoded 'Saju' default if it was saved to localStorage
+  const cached = localStorage.getItem('fifa_participants');
+  if (cached === '["Saju"]') {
+    localStorage.removeItem('fifa_participants');
+    participants = [];
+  }
   populateUserSelect();
   if (currentUser) {
     document.getElementById('userSelect').value = currentUser;
