@@ -86,6 +86,15 @@
   .modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:4px}
   @media(max-width:640px){.tabs{overflow-x:auto;scrollbar-width:none}.tab{padding:12px 14px;font-size:.82rem}.config-bar input[type=text]{width:100%}.header-text h1{font-size:1.3rem}}
   .spinner{display:inline-block;width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .7s linear infinite}
+  .pin-dots{display:flex;gap:10px;justify-content:center;margin:16px 0}
+  .pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border);background:#fff;transition:all .2s}
+  .pin-dot.filled{background:var(--navy);border-color:var(--navy)}
+  .pin-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+  .pin-key{padding:14px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:1.1rem;font-weight:700;cursor:pointer;text-align:center;transition:all .15s;user-select:none}
+  .pin-key:hover{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .pin-key:active{transform:scale(.94)}
+  .pin-key.wide{grid-column:span 1}
+  .locked-badge{background:#e0f2fe;color:#0c4a6e;padding:3px 10px;border-radius:999px;font-size:.75rem;font-weight:700;display:none}
   @keyframes spin{to{transform:rotate(360deg)}}
   .today-match-card{border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:14px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.05);display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center}
   .today-match-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.1)}
@@ -119,6 +128,7 @@
 <main>
 <div class="config-bar">
   <div><label>&#128100; Select A Player</label><select id="userSelect" onchange="selectUser()" style="width:200px"><option value="">&#8212; Select Player &#8212;</option></select></div>
+  <button class="btn btn-danger btn-sm" id="logoutBtn" onclick="logout()" style="display:none">&#128275; Switch Player</button>
   <button class="btn btn-gold btn-sm" onclick="openModal('addPlayerModal')">+ Add Player</button>
   <span id="dataSource" style="font-size:.78rem;color:var(--gray);margin-left:auto"></span>
 </div>
@@ -222,7 +232,9 @@
 <div class="modal-overlay" id="addPlayerModal">
   <div class="modal">
     <h3>&#10133; Add New Player</h3>
-    <input type="text" id="newPlayerName" placeholder="Player name&#8230;" onkeydown="if(event.key==='Enter')addPlayer()" />
+    <input type="text" id="newPlayerName" placeholder="Player name&#8230;" onkeydown="if(event.key==='Enter')document.getElementById('newPlayerPin').focus()" />
+    <input type="password" id="newPlayerPin" placeholder="4-digit PIN (e.g. 1234)&#8230;" maxlength="4" inputmode="numeric" pattern="\d{4}" onkeydown="if(event.key==='Enter')addPlayer()" style="letter-spacing:6px;font-size:1.1rem" />
+    <p style="font-size:.75rem;color:var(--gray);margin-top:-6px;margin-bottom:8px">&#128274; Each player needs a unique 4-digit PIN to access their predictions.</p>
     <div id="addPlayerSpinner" style="display:none;text-align:center;padding:16px 0">
       <div class="spinner" style="margin:0 auto"></div>
       <p style="font-size:.85rem;color:var(--gray);margin-top:10px">Adding player to database&#8230;</p>
@@ -232,6 +244,36 @@
       <button class="btn btn-primary" onclick="addPlayer()">Add</button>
       <button class="btn" style="background:#f3f4f6" onclick="closeModal('addPlayerModal')">Cancel</button>
     </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="pinModal">
+  <div class="modal" style="width:320px;text-align:center">
+    <h3>&#128274; Enter Your PIN</h3>
+    <p style="color:var(--gray);font-size:.88rem;margin-bottom:4px">Welcome, <strong id="pinModalName"></strong></p>
+    <div class="pin-dots">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
+    </div>
+    <input type="password" id="pinInput" maxlength="4" inputmode="numeric" style="opacity:0;position:absolute;pointer-events:none" oninput="onPinInput()" />
+    <div class="pin-keypad">
+      <button class="pin-key" onclick="pinKey('1')">1</button>
+      <button class="pin-key" onclick="pinKey('2')">2</button>
+      <button class="pin-key" onclick="pinKey('3')">3</button>
+      <button class="pin-key" onclick="pinKey('4')">4</button>
+      <button class="pin-key" onclick="pinKey('5')">5</button>
+      <button class="pin-key" onclick="pinKey('6')">6</button>
+      <button class="pin-key" onclick="pinKey('7')">7</button>
+      <button class="pin-key" onclick="pinKey('8')">8</button>
+      <button class="pin-key" onclick="pinKey('9')">9</button>
+      <button class="pin-key" onclick="pinKey('back')" style="font-size:.9rem">&#9003;</button>
+      <button class="pin-key" onclick="pinKey('0')">0</button>
+      <button class="pin-key btn-primary" onclick="verifyPin()" style="background:var(--navy);color:#fff;border-color:var(--navy)">&#10003;</button>
+    </div>
+    <p id="pinError" style="color:var(--red);font-size:.85rem;margin-top:10px;display:none"></p>
+    <button class="btn btn-sm" style="background:#f3f4f6;margin-top:12px;width:100%" onclick="cancelPin()">Cancel</button>
   </div>
 </div>
 
@@ -386,19 +428,24 @@ const GROUPS = {
 
 // ── STATE ─────────────────────────────────────────────────────
 let matches = RAW_MATCHES.map(m => ({id:m[0],stage:m[1],group:m[2],date:m[3],time:m[4],team1:m[5],team2:m[6],venue:m[7]}));
-let participants = JSON.parse(localStorage.getItem('fifa_participants') || '["Saju"]');
-let predictions  = JSON.parse(localStorage.getItem('fifa_predictions')  || '{}');
-let actualScores = JSON.parse(localStorage.getItem('fifa_actual')       || '{}');
-let currentUser  = localStorage.getItem('fifa_user') || '';
-let adminUnlocked = false;
-const ADMIN_PASS = 'admin123';
+let participants    = JSON.parse(localStorage.getItem('fifa_participants')     || '["Saju"]');
+let participantData = JSON.parse(localStorage.getItem('fifa_participant_data') || '[]');
+let predictions     = JSON.parse(localStorage.getItem('fifa_predictions')      || '{}');
+let actualScores    = JSON.parse(localStorage.getItem('fifa_actual')           || '{}');
+let currentUser     = localStorage.getItem('fifa_user') || '';
+let currentUserTemp = '';
+let pinVerified     = !!localStorage.getItem('fifa_user'); // restored from session
+let adminUnlocked   = false;
+const ADMIN_PASS    = 'admin123';
 
 // ── INIT ──────────────────────────────────────────────────────
 function init() {
   populateUserSelect();
   if (currentUser) {
     document.getElementById('userSelect').value = currentUser;
+    document.getElementById('userSelect').disabled = true;
     document.getElementById('userBadge').textContent = '\u{1F464} ' + currentUser;
+    document.getElementById('logoutBtn').style.display = 'inline-block';
   }
   // participants dropdown is populated from Supabase in loadFromSupabase()
   renderGroups(); renderMatches(); renderTodayMatches(); renderLeaderboard();
@@ -411,11 +458,13 @@ async function loadFromSupabase() {
   const src = document.getElementById('dataSource');
   if (!db) { src.textContent = '\u{1F4CB} Built-in data (Supabase unavailable)'; return; }
   try {
-    const {data:parts,error:e1} = await db.from('participants').select('name').order('id');
+    const {data:parts,error:e1} = await db.from('participants').select('name, pin').order('id');
     if (e1) throw e1;
     if (parts && parts.length) {
+      participantData = parts;
       participants = parts.map(p => p.name);
       localStorage.setItem('fifa_participants', JSON.stringify(participants));
+      localStorage.setItem('fifa_participant_data', JSON.stringify(participantData));
       populateUserSelect();
     }
     const {data:preds,error:e2} = await db.from('predictions').select('*');
@@ -486,14 +535,72 @@ function populateUserSelect() {
   if (currentUser) sel.value = currentUser;
 }
 function selectUser() {
-  currentUser = document.getElementById('userSelect').value;
-  localStorage.setItem('fifa_user', currentUser);
-  document.getElementById('userBadge').textContent = currentUser ? '\u{1F464} '+currentUser : 'Not logged in';
+  const selected = document.getElementById('userSelect').value;
+  if (!selected) return;
+  currentUserTemp = selected;
+  document.getElementById('pinModalName').textContent = selected;
+  document.getElementById('pinInput').value = '';
+  document.getElementById('pinError').style.display = 'none';
+  updatePinDots();
+  openModal('pinModal');
+  setTimeout(() => document.getElementById('pinInput').focus(), 100);
+}
+
+// ── PIN KEYPAD ────────────────────────────────────────────────
+function pinKey(k) {
+  const inp = document.getElementById('pinInput');
+  if (k === 'back') { inp.value = inp.value.slice(0,-1); }
+  else if (inp.value.length < 4) { inp.value += k; }
+  updatePinDots();
+  if (inp.value.length === 4) verifyPin();
+}
+function onPinInput() { updatePinDots(); if (document.getElementById('pinInput').value.length===4) verifyPin(); }
+function updatePinDots() {
+  const len = document.getElementById('pinInput').value.length;
+  for (let i=0;i<4;i++) {
+    const dot = document.getElementById('pd'+i);
+    dot.classList.toggle('filled', i < len);
+  }
+}
+function verifyPin() {
+  const entered = document.getElementById('pinInput').value.trim();
+  const player  = participantData.find(p => p.name === currentUserTemp);
+  const correct = (player && player.pin) ? String(player.pin) : '0000';
+  if (entered === correct) {
+    currentUser = currentUserTemp;
+    pinVerified = true;
+    localStorage.setItem('fifa_user', currentUser);
+    document.getElementById('userBadge').textContent = '\u{1F464} ' + currentUser;
+    document.getElementById('userSelect').value = currentUser;
+    document.getElementById('userSelect').disabled = true;
+    document.getElementById('logoutBtn').style.display = 'inline-block';
+    closeModal('pinModal');
+    renderPredictions();
+  } else {
+    document.getElementById('pinError').textContent = '❌ Wrong PIN — try again.';
+    document.getElementById('pinError').style.display = 'block';
+    document.getElementById('pinInput').value = '';
+    updatePinDots();
+  }
+}
+function cancelPin() {
+  document.getElementById('userSelect').value = '';
+  closeModal('pinModal');
+}
+function logout() {
+  currentUser = ''; currentUserTemp = ''; pinVerified = false;
+  localStorage.removeItem('fifa_user');
+  document.getElementById('userBadge').textContent = 'Not logged in';
+  document.getElementById('userSelect').disabled = false;
+  document.getElementById('userSelect').value = '';
+  document.getElementById('logoutBtn').style.display = 'none';
   renderPredictions();
 }
 async function addPlayer() {
   const name = document.getElementById('newPlayerName').value.trim();
-  if (!name) return;
+  const pin  = document.getElementById('newPlayerPin').value.trim();
+  if (!name) { toast('Please enter a player name'); return; }
+  if (!/^\d{4}$/.test(pin)) { toast('PIN must be exactly 4 digits'); return; }
   if (participants.includes(name)) { toast('Player already exists!'); return; }
 
   // Show spinner, hide footer
@@ -502,7 +609,7 @@ async function addPlayer() {
   document.getElementById('addPlayerSuccess').style.display = 'none';
 
   if (db) {
-    const {error} = await db.from('participants').insert({name});
+    const {error} = await db.from('participants').insert({name, pin});
     if (error && error.code !== '23505') {
       document.getElementById('addPlayerSpinner').style.display = 'none';
       document.getElementById('addPlayerFooter').style.display = 'flex';
@@ -511,8 +618,10 @@ async function addPlayer() {
     }
   }
 
+  participantData.push({name, pin});
   participants.push(name);
   localStorage.setItem('fifa_participants', JSON.stringify(participants));
+  localStorage.setItem('fifa_participant_data', JSON.stringify(participantData));
   populateUserSelect();
 
   // Hide spinner, show success
@@ -521,10 +630,10 @@ async function addPlayer() {
   successEl.textContent = '✅ '+name+', Added successfully';
   successEl.style.display = 'block';
 
-  // Auto-close and reset after 2 s
   setTimeout(() => {
     closeModal('addPlayerModal');
     document.getElementById('newPlayerName').value = '';
+    document.getElementById('newPlayerPin').value = '';
     successEl.style.display = 'none';
     document.getElementById('addPlayerFooter').style.display = 'flex';
   }, 2000);
@@ -676,7 +785,12 @@ function renderMatches() {
 
 // ── PREDICTIONS PAGE ──────────────────────────────────────────
 function renderPredictions() {
-  if (!currentUser) { document.getElementById('predictContainer').innerHTML='<div class="alert alert-warn">⚠️ Please select your name above.</div>'; return; }
+  if (!currentUser || !pinVerified) {
+    document.getElementById('predictContainer').innerHTML=
+      '<div class="alert alert-warn" style="text-align:center;padding:24px">'+
+      '&#128274; Select your name above and enter your PIN to view your predictions.</div>';
+    return;
+  }
   const grp = document.getElementById('predGroupFilter').value;
   const onlyUnpred = document.getElementById('showUnpredicted').checked;
   const userPreds = predictions[currentUser] || {};
