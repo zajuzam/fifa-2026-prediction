@@ -105,6 +105,23 @@
   .no-matches-today{text-align:center;padding:60px 20px;color:var(--gray)}
   .no-matches-today .big-icon{font-size:4rem;margin-bottom:12px}
   .no-matches-today h3{font-size:1.1rem;color:var(--navy);margin-bottom:6px}
+  /* ── COMPETITION BANNER ── */
+  .comp-banner{background:linear-gradient(135deg,#0d2440 0%,#1a3c5e 60%,#c8102e 100%);color:#fff;padding:20px 24px;margin-bottom:0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+  .comp-banner h2{font-size:1.1rem;font-weight:800;margin-bottom:2px}
+  .comp-banner p{font-size:.82rem;opacity:.85}
+  .prize-stats{display:flex;gap:24px;align-items:center}
+  .prize-stat{text-align:center}
+  .prize-stat .num{font-size:1.6rem;font-weight:900;color:var(--gold)}
+  .prize-stat .lbl{font-size:.7rem;opacity:.8;text-transform:uppercase;letter-spacing:.5px}
+  .share-strip{background:#fff;border-bottom:1px solid var(--border);padding:10px 24px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .share-strip span{font-size:.82rem;font-weight:600;color:var(--gray)}
+  .share-btn{display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:999px;border:none;cursor:pointer;font-size:.8rem;font-weight:700;transition:all .15s}
+  .share-wa{background:#25D366;color:#fff}.share-wa:hover{filter:brightness(.9)}
+  .share-fb{background:#1877F2;color:#fff}.share-fb:hover{filter:brightness(.9)}
+  .share-x{background:#000;color:#fff}.share-x:hover{filter:brightness(.4)}
+  .share-copy{background:var(--light);color:var(--navy);border:1px solid var(--border)}.share-copy:hover{background:var(--border)}
+  .join-btn{background:var(--gold);color:var(--navy);padding:8px 20px;border-radius:8px;border:none;cursor:pointer;font-weight:800;font-size:.9rem;margin-left:auto;transition:all .15s}
+  .join-btn:hover{filter:brightness(.92)}
 </style>
 </head>
 <body>
@@ -115,6 +132,24 @@
     <div class="badge" id="userBadge">Not logged in</div>
   </div>
 </header>
+<div class="comp-banner">
+  <div>
+    <h2>&#127942; FIFA 2026 Score Prediction Competition</h2>
+    <p>&#128197; Tournament: Jun 11 – Jul 19, 2026 &nbsp;|&nbsp; &#127468;&#127463; Canada &nbsp;&#127474;&#127485; Mexico &nbsp;&#127482;&#127480; USA</p>
+  </div>
+  <div class="prize-stats">
+    <div class="prize-stat"><div class="num" id="bannerPlayers">0</div><div class="lbl">Players Joined</div></div>
+    <div class="prize-stat"><div class="num" id="bannerDays">26</div><div class="lbl">Days to Kickoff</div></div>
+  </div>
+  <button class="join-btn" onclick="openModal('selfRegModal')">&#9917; Join Competition</button>
+</div>
+<div class="share-strip">
+  <span>&#128279; Share with friends:</span>
+  <button class="share-btn share-wa" onclick="shareApp('wa')">&#128241; WhatsApp</button>
+  <button class="share-btn share-fb" onclick="shareApp('fb')">&#128100; Facebook</button>
+  <button class="share-btn share-x" onclick="shareApp('x')">&#10006; X / Twitter</button>
+  <button class="share-btn share-copy" onclick="shareApp('copy')">&#128203; Copy Link</button>
+</div>
 <nav>
   <div class="tabs">
     <div class="tab active" onclick="showPage('groups')">&#128193; Groups</div>
@@ -242,6 +277,26 @@
     <div class="modal-footer" id="addPlayerFooter">
       <button class="btn btn-primary" onclick="addPlayer()">Add</button>
       <button class="btn" style="background:#f3f4f6" onclick="closeModal('addPlayerModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="selfRegModal">
+  <div class="modal" style="width:400px">
+    <h3>&#9917; Join the Competition</h3>
+    <p style="color:var(--gray);font-size:.85rem;margin-bottom:14px">Enter your name and choose a 4-digit PIN. You'll use this PIN every time you log in.</p>
+    <input type="text" id="regName" placeholder="Your full name&#8230;" style="width:100%;padding:9px 12px;border:2px solid var(--border);border-radius:7px;font-size:.95rem;margin-bottom:10px" onkeydown="if(event.key==='Enter')document.getElementById('regPin').focus()" />
+    <input type="password" id="regPin" placeholder="Choose a 4-digit PIN&#8230;" maxlength="4" inputmode="numeric" style="width:100%;padding:9px 12px;border:2px solid var(--border);border-radius:7px;font-size:1.1rem;letter-spacing:6px;margin-bottom:6px" onkeydown="if(event.key==='Enter')selfRegister()" />
+    <p style="font-size:.75rem;color:var(--gray);margin-bottom:12px">&#128274; Remember your PIN — you'll need it to access your predictions.</p>
+    <div id="regSpinner" style="display:none;text-align:center;padding:12px 0">
+      <div class="spinner" style="margin:0 auto"></div>
+      <p style="font-size:.85rem;color:var(--gray);margin-top:8px">Registering&#8230;</p>
+    </div>
+    <div id="regSuccess" class="alert alert-success" style="display:none;font-weight:600"></div>
+    <div id="regError" class="alert alert-warn" style="display:none"></div>
+    <div class="modal-footer" id="regFooter">
+      <button class="btn btn-success" onclick="selfRegister()">&#9917; Join Now</button>
+      <button class="btn" style="background:#f3f4f6" onclick="closeModal('selfRegModal')">Cancel</button>
     </div>
   </div>
 </div>
@@ -452,10 +507,10 @@ function init() {
     document.getElementById('userBadge').textContent = '\u{1F464} ' + currentUser;
     document.getElementById('logoutBtn').style.display = 'inline-block';
   }
-  renderGroups(); renderMatches(); renderTodayMatches(); renderLeaderboard();
+  renderGroups(); renderMatches(); renderTodayMatches(); renderLeaderboard(); updateBanner();
   document.getElementById('dataSource').textContent = db ? '⏳ Connecting to Supabase…' : '\u{1F4CB} Using built-in data (Supabase SDK not loaded)';
   // Load participants first (populates dropdown), then load the rest
-  loadParticipants().then(() => loadFromSupabase());
+  loadParticipants().then(() => { updateBanner(); loadFromSupabase(); });
 }
 
 // ── SUPABASE LOAD ─────────────────────────────────────────────
@@ -510,6 +565,67 @@ async function loadFromSupabase() {
     src.textContent = '⚠️ Supabase error — using local cache';
     console.warn('Supabase load error:', err.message);
     renderAll();
+  }
+}
+
+// ── COMPETITION BANNER ───────────────────────────────────────
+function updateBanner() {
+  document.getElementById('bannerPlayers').textContent = participants.length;
+  const kickoff = new Date('2026-06-11');
+  const today   = new Date();
+  const days    = Math.max(0, Math.ceil((kickoff - today) / 86400000));
+  document.getElementById('bannerDays').textContent = days > 0 ? days : '🔴 Live!';
+}
+
+// ── SELF REGISTRATION ─────────────────────────────────────────
+async function selfRegister() {
+  const name = document.getElementById('regName').value.trim();
+  const pin  = document.getElementById('regPin').value.trim();
+  const errEl = document.getElementById('regError');
+  errEl.style.display = 'none';
+  if (!name) { errEl.textContent = 'Please enter your name.'; errEl.style.display='block'; return; }
+  if (!/^\d{4}$/.test(pin)) { errEl.textContent = 'PIN must be exactly 4 digits.'; errEl.style.display='block'; return; }
+  if (participants.includes(name)) { errEl.textContent = 'That name is already taken — try a variation.'; errEl.style.display='block'; return; }
+
+  document.getElementById('regSpinner').style.display = 'block';
+  document.getElementById('regFooter').style.display  = 'none';
+
+  if (db) {
+    const {error} = await db.from('participants').insert({name, pin});
+    if (error && error.code !== '23505') {
+      document.getElementById('regSpinner').style.display = 'none';
+      document.getElementById('regFooter').style.display  = 'flex';
+      errEl.textContent = 'Error: ' + error.message;
+      errEl.style.display = 'block';
+      return;
+    }
+  }
+
+  await loadParticipants();
+  document.getElementById('regSpinner').style.display = 'none';
+  const ok = document.getElementById('regSuccess');
+  ok.textContent = '✅ Welcome ' + name + '! You\'re in. Select your name from the dropdown to start predicting!';
+  ok.style.display = 'block';
+  updateBanner();
+
+  setTimeout(() => {
+    closeModal('selfRegModal');
+    document.getElementById('regName').value = '';
+    document.getElementById('regPin').value  = '';
+    ok.style.display = 'none';
+    document.getElementById('regFooter').style.display = 'flex';
+  }, 3000);
+}
+
+// ── SHARE ─────────────────────────────────────────────────────
+function shareApp(platform) {
+  const url  = 'https://fifa2026prediction.com';
+  const text = '⚽ Join my FIFA World Cup 2026 Score Prediction Competition! Predict match scores, earn points and top the leaderboard. Sign up here: ';
+  if (platform === 'wa')   window.open('https://wa.me/?text='+encodeURIComponent(text+url), '_blank');
+  if (platform === 'fb')   window.open('https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent(url), '_blank');
+  if (platform === 'x')    window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent(text)+'&url='+encodeURIComponent(url), '_blank');
+  if (platform === 'copy') {
+    navigator.clipboard.writeText(url).then(() => toast('✅ Link copied to clipboard!'));
   }
 }
 
