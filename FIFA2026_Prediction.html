@@ -206,7 +206,6 @@
       <p style="margin-bottom:12px;color:var(--gray);font-size:.9rem">Enter the admin password to update actual match scores.</p>
       <input type="password" id="adminPwInput" placeholder="Password" style="width:100%;padding:9px 12px;border:2px solid var(--border);border-radius:7px;font-size:.95rem;margin-bottom:10px">
       <button class="btn btn-primary" onclick="unlockAdmin()">Unlock</button>
-      <p style="font-size:.75rem;color:var(--gray);margin-top:8px">Default password: <code>admin123</code></p>
     </div>
   </div>
   <div id="adminPanel" style="display:none">
@@ -436,7 +435,7 @@ let currentUser     = localStorage.getItem('fifa_user') || '';
 let currentUserTemp = '';
 let pinVerified     = !!localStorage.getItem('fifa_user'); // restored from session
 let adminUnlocked   = false;
-const ADMIN_PASS    = 'admin123';
+const ADMIN_PASS    = '123GReetings@!';
 
 // ── INIT ──────────────────────────────────────────────────────
 function init() {
