@@ -210,6 +210,10 @@
   </div>
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px">
     <div class="filter-row" style="margin-bottom:0">
+      <select id="predStageFilter" onchange="renderPredictions()" style="font-weight:700;color:var(--navy)">
+        <option value="Group Stage">&#128193; Group Stage</option>
+        <option value="Knockout">&#9889; Knockout Rounds</option>
+      </select>
       <select id="predGroupFilter" onchange="renderPredictions()">
         <option value="">All Groups</option>
         <option>A</option><option>B</option><option>C</option><option>D</option>
@@ -263,21 +267,27 @@
     </div>
   </div>
   <div id="adminPanel" style="display:none">
-    <div class="alert alert-success">&#10003; Admin mode active &#8212; enter actual match scores below.</div>
-    <div class="filter-row">
-      <select id="adminGroupFilter" onchange="renderAdminScores()">
-        <option value="">All Groups</option>
-        <option>A</option><option>B</option><option>C</option><option>D</option>
-        <option>E</option><option>F</option><option>G</option><option>H</option>
-        <option>I</option><option>J</option><option>K</option><option>L</option>
-      </select>
-      <label style="font-size:.82rem;align-self:center;color:var(--gray)"><input type="checkbox" id="showOnlyPlayed" onchange="renderAdminScores()"> Show played only</label>
+    <div class="alert alert-success">&#10003; Admin mode active &#8212; enter scores and manage knockout teams below.</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+      <div class="filter-row" style="margin-bottom:0;flex-wrap:wrap">
+        <select id="adminStageFilter" onchange="renderAdminScores()" style="font-weight:700;color:var(--navy)">
+          <option value="Group Stage">&#128193; Group Stage</option>
+          <option value="Knockout">&#9889; Knockout Rounds</option>
+        </select>
+        <select id="adminGroupFilter" onchange="renderAdminScores()">
+          <option value="">All Groups</option>
+          <option>A</option><option>B</option><option>C</option><option>D</option>
+          <option>E</option><option>F</option><option>G</option><option>H</option>
+          <option>I</option><option>J</option><option>K</option><option>L</option>
+        </select>
+        <label style="font-size:.82rem;align-self:center;color:var(--gray)"><input type="checkbox" id="showOnlyPlayed" onchange="renderAdminScores()"> Show played only</label>
+      </div>
+      <div style="display:flex;gap:8px;flex-shrink:0">
+        <button class="btn btn-success" onclick="saveAdminScores()">&#128190; Save Scores</button>
+        <button class="btn btn-danger btn-sm" onclick="resetAllData()">&#128465; Reset All Data</button>
+      </div>
     </div>
     <div id="adminContainer"></div>
-    <div style="margin-top:16px;text-align:right">
-      <button class="btn btn-success" onclick="saveAdminScores()">&#128190; Save Scores</button>
-      <button class="btn btn-danger btn-sm" style="margin-left:8px" onclick="resetAllData()">&#128465; Reset All Data</button>
-    </div>
   </div>
 </div>
 </main>
@@ -505,6 +515,7 @@ let participants    = JSON.parse(localStorage.getItem('fifa_participants')     |
 let participantData = JSON.parse(localStorage.getItem('fifa_participant_data') || '[]');
 let predictions     = JSON.parse(localStorage.getItem('fifa_predictions')      || '{}');
 let actualScores    = JSON.parse(localStorage.getItem('fifa_actual')           || '{}');
+let knockoutTeams   = JSON.parse(localStorage.getItem('fifa_knockout_teams')   || '{}'); // {matchId:{team1,team2}}
 let currentUser     = localStorage.getItem('fifa_user') || '';
 let currentUserTemp = '';
 let pinVerified     = !!localStorage.getItem('fifa_user'); // restored from session
@@ -944,18 +955,35 @@ function renderPredictions() {
       '&#128274; Select your name above and enter your PIN to view your predictions.</div>';
     return;
   }
-  const grp = document.getElementById('predGroupFilter').value;
+  const predStage  = document.getElementById('predStageFilter').value;
+  const grp        = document.getElementById('predGroupFilter').value;
   const onlyUnpred = document.getElementById('showUnpredicted').checked;
+  const isKnockout = predStage === 'Knockout';
+  const knockoutStages = ['Round of 32','Round of 16','Quarterfinal','Semifinal','Bronze Medal','Final'];
+  // Hide group filter when viewing knockout
+  document.getElementById('predGroupFilter').style.display = isKnockout ? 'none' : '';
   const userPreds = predictions[currentUser] || {};
   const list = matches.filter(m => {
-    if (m.stage!=='Group Stage') return false;
-    if (grp && m.group!==grp) return false;
+    if (isKnockout) return knockoutStages.includes(m.stage);
+    if (m.stage !== 'Group Stage') return false;
+    if (grp && m.group !== grp) return false;
     if (onlyUnpred && userPreds[m.id]) return false;
     return true;
   });
-  let html='', lastGrp='';
+  if (isKnockout) {
+    const anyTeamSet = list.some(m => getTeam(m,'team1') !== 'TBD' || getTeam(m,'team2') !== 'TBD');
+    if (!anyTeamSet) {
+      document.getElementById('predictContainer').innerHTML =
+        '<div class="alert alert-warn" style="text-align:center;padding:24px">'+
+        '&#9203; Knockout round predictions will be available once the Admin sets the team matchups after Group Stage ends (Jun 25).</div>';
+      return;
+    }
+  }
+  let html = '', lastGrp = '';
   list.forEach(m => {
-    if (m.group!==lastGrp) { html+='<h3 style="margin:16px 0 8px;color:var(--navy);font-size:.9rem;font-weight:700"><span class="group-tag g-'+m.group+'">Group '+m.group+'</span></h3>'; lastGrp=m.group; }
+    const t1 = getTeam(m,'team1'), t2 = getTeam(m,'team2');
+    if (!isKnockout && m.group !== lastGrp) { html+='<h3 style="margin:16px 0 8px;color:var(--navy);font-size:.9rem;font-weight:700"><span class="group-tag g-'+m.group+'">Group '+m.group+'</span></h3>'; lastGrp=m.group; }
+    if (isKnockout && m.stage !== lastGrp) { html+='<h3 style="margin:16px 0 8px;color:var(--navy);font-size:.9rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border);padding-bottom:6px">⚡ '+m.stage+'</h3>'; lastGrp=m.stage; }
     const sc=actualScores[m.id], pred=userPreds[m.id]||{};
     let ptsBadge='';
     if (sc!==undefined && pred.s1!==undefined) {
@@ -963,7 +991,7 @@ function renderPredictions() {
       ptsBadge = pts===3?'<span class="score-badge score-exact">⭐ +3 pts</span>':pts===1?'<span class="score-badge score-result">✓ +1 pt</span>':'<span class="score-badge score-wrong">✗ 0 pts</span>';
     }
     html += '<div class="match-card">'+
-      '<div class="match-team">'+(FLAGS[m.team1]||'\u{1F3F3}️')+' <span>'+m.team1+'</span></div>'+
+      '<div class="match-team">'+(FLAGS[t1]||'\u{1F3F3}️')+' <span>'+t1+'</span></div>'+
       '<div class="match-center"><div class="pred-inputs">'+
       '<input type="number" min="0" max="20" id="pred_'+m.id+'_s1" value="'+(pred.s1!==undefined?pred.s1:'')+'" placeholder="–" data-mid="'+m.id+'" data-side="s1">'+
       '<span class="dash">:</span>'+
@@ -971,7 +999,7 @@ function renderPredictions() {
       '</div><div class="match-meta" style="margin-top:6px">'+fmtDate(m.date)+' · '+m.time+'</div>'+
       (sc!==undefined?'<div class="match-meta" style="color:var(--green);font-weight:600;margin-top:2px">Actual: '+sc.s1+'–'+sc.s2+'</div>':'')+
       ptsBadge+'</div>'+
-      '<div class="match-team right"><span>'+m.team2+'</span> '+(FLAGS[m.team2]||'\u{1F3F3}️')+'</div></div>';
+      '<div class="match-team right"><span>'+t2+'</span> '+(FLAGS[t2]||'\u{1F3F3}️')+'</div></div>';
   });
   document.getElementById('predictContainer').innerHTML = html || '<p style="color:var(--gray);text-align:center;padding:40px">All predictions submitted! \u{1F389}</p>';
 }
@@ -1041,51 +1069,102 @@ function unlockAdmin() {
   } else { toast('Wrong password!'); }
 }
 
+function getTeam(m, side) {
+  const ko = knockoutTeams[m.id];
+  if (ko && ko[side] && ko[side] !== 'TBD') return ko[side];
+  return m[side];
+}
 function renderAdminScores() {
-  const grp=document.getElementById('adminGroupFilter').value;
-  const onlyPlayed=document.getElementById('showOnlyPlayed').checked;
-  const list=matches.filter(m => {
-    if (m.stage!=='Group Stage') return false;
-    if (grp&&m.group!==grp) return false;
-    if (onlyPlayed&&!actualScores[m.id]) return false;
+  const stage      = document.getElementById('adminStageFilter').value;
+  const grp        = document.getElementById('adminGroupFilter').value;
+  const onlyPlayed = document.getElementById('showOnlyPlayed').checked;
+  const isKnockout = stage === 'Knockout';
+  // Show/hide group filter (not relevant for knockout)
+  document.getElementById('adminGroupFilter').style.display = isKnockout ? 'none' : '';
+  const knockoutStages = ['Round of 32','Round of 16','Quarterfinal','Semifinal','Bronze Medal','Final'];
+  const list = matches.filter(m => {
+    if (isKnockout) return knockoutStages.includes(m.stage);
+    if (m.stage !== 'Group Stage') return false;
+    if (grp && m.group !== grp) return false;
+    if (onlyPlayed && !actualScores[m.id]) return false;
     return true;
   });
-  let html='',lastGrp='';
+  let html = '', lastStage = '';
   list.forEach(m => {
-    if (m.group!==lastGrp) { html+='<h3 style="margin:16px 0 8px;color:var(--navy);font-size:.9rem;font-weight:700"><span class="group-tag g-'+m.group+'">Group '+m.group+'</span></h3>'; lastGrp=m.group; }
-    const sc=actualScores[m.id]||{};
-    html+='<div class="match-card">'+
-      '<div class="match-team">'+(FLAGS[m.team1]||'\u{1F3F3}️')+' <span>'+m.team1+'</span></div>'+
-      '<div class="match-center"><div class="pred-inputs">'+
-      '<input type="number" min="0" max="20" id="admin_'+m.id+'_s1" value="'+(sc.s1!==undefined?sc.s1:'')+'" placeholder="–">'+
-      '<span class="dash">:</span>'+
-      '<input type="number" min="0" max="20" id="admin_'+m.id+'_s2" value="'+(sc.s2!==undefined?sc.s2:'')+'" placeholder="–">'+
-      '</div><div class="match-meta" style="margin-top:6px">'+fmtDate(m.date)+' · '+m.time+'</div>'+
-      '<div class="match-meta">\u{1F4CD} '+m.venue+'</div>'+
-      (sc.s1!==undefined?'<span class="chip chip-done" style="margin-top:4px">✓ Score entered</span>':'<span class="chip chip-upcoming" style="margin-top:4px">Upcoming</span>')+
-      '</div><div class="match-team right"><span>'+m.team2+'</span> '+(FLAGS[m.team2]||'\u{1F3F3}️')+'</div></div>';
+    const t1 = getTeam(m,'team1'), t2 = getTeam(m,'team2');
+    const sc = actualScores[m.id] || {};
+    if (m.stage !== lastStage) {
+      html += '<h3 style="margin:16px 0 8px;color:var(--navy);font-size:.9rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border);padding-bottom:6px">'+(isKnockout?'⚡ ':'')+m.stage+'</h3>';
+      lastStage = m.stage;
+    }
+    if (!isKnockout) {
+      if (m.group !== lastStage) {} // handled above
+      html += '<div class="match-card">'+
+        '<div class="match-team">'+(FLAGS[t1]||'\u{1F3F3}️')+' <span>'+t1+'</span></div>'+
+        '<div class="match-center"><div class="pred-inputs">'+
+        '<input type="number" min="0" max="20" id="admin_'+m.id+'_s1" value="'+(sc.s1!==undefined?sc.s1:'')+'" placeholder="–">'+
+        '<span class="dash">:</span>'+
+        '<input type="number" min="0" max="20" id="admin_'+m.id+'_s2" value="'+(sc.s2!==undefined?sc.s2:'')+'" placeholder="–">'+
+        '</div><div class="match-meta" style="margin-top:6px">'+fmtDate(m.date)+' · '+m.time+'</div>'+
+        '<div class="match-meta">\u{1F4CD} '+m.venue+'</div>'+
+        (sc.s1!==undefined?'<span class="chip chip-done" style="margin-top:4px">✓ Score entered</span>':'<span class="chip chip-upcoming" style="margin-top:4px">Upcoming</span>')+
+        '</div><div class="match-team right"><span>'+t2+'</span> '+(FLAGS[t2]||'\u{1F3F3}️')+'</div></div>';
+    } else {
+      // Knockout: editable team names + scores
+      html += '<div class="match-card" style="flex-direction:column;display:block;padding:16px">'+
+        '<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center">'+
+        '<div><label style="font-size:.7rem;color:var(--gray);display:block;margin-bottom:2px">Team 1</label>'+
+        '<input type="text" id="ko_'+m.id+'_t1" value="'+t1+'" placeholder="TBD" style="width:100%;padding:6px 8px;border:2px solid var(--border);border-radius:6px;font-weight:700"></div>'+
+        '<div class="match-center">'+
+        '<div class="pred-inputs" style="justify-content:center">'+
+        '<input type="number" min="0" max="20" id="admin_'+m.id+'_s1" value="'+(sc.s1!==undefined?sc.s1:'')+'" placeholder="–">'+
+        '<span class="dash">:</span>'+
+        '<input type="number" min="0" max="20" id="admin_'+m.id+'_s2" value="'+(sc.s2!==undefined?sc.s2:'')+'" placeholder="–">'+
+        '</div><div class="match-meta" style="margin-top:4px">'+fmtDate(m.date)+' · '+m.time+'</div>'+
+        (sc.s1!==undefined?'<span class="chip chip-done" style="margin-top:4px">✓ Score entered</span>':'<span class="chip chip-upcoming" style="margin-top:4px">Upcoming</span>')+
+        '</div>'+
+        '<div><label style="font-size:.7rem;color:var(--gray);display:block;margin-bottom:2px;text-align:right">Team 2</label>'+
+        '<input type="text" id="ko_'+m.id+'_t2" value="'+t2+'" placeholder="TBD" style="width:100%;padding:6px 8px;border:2px solid var(--border);border-radius:6px;font-weight:700;text-align:right">'+
+        '</div></div></div>';
+    }
   });
-  document.getElementById('adminContainer').innerHTML = html;
+  document.getElementById('adminContainer').innerHTML = html || '<p style="color:var(--gray);text-align:center;padding:40px">No matches found.</p>';
 }
 
 async function saveAdminScores() {
-  const rows=[];
-  matches.filter(m=>m.stage==='Group Stage').forEach(m => {
-    const s1el=document.getElementById('admin_'+m.id+'_s1'), s2el=document.getElementById('admin_'+m.id+'_s2');
-    if (!s1el||!s2el) return;
-    if (s1el.value!==''&&s2el.value!=='') {
-      actualScores[m.id]={s1:parseInt(s1el.value),s2:parseInt(s2el.value)};
-      rows.push({match_id:m.id,score1:parseInt(s1el.value),score2:parseInt(s2el.value),updated_at:new Date().toISOString()});
+  const isKnockout = document.getElementById('adminStageFilter').value === 'Knockout';
+  const knockoutStages = ['Round of 32','Round of 16','Quarterfinal','Semifinal','Bronze Medal','Final'];
+  const rows = [];
+  const stageMatches = isKnockout
+    ? matches.filter(m => knockoutStages.includes(m.stage))
+    : matches.filter(m => m.stage === 'Group Stage');
+
+  stageMatches.forEach(m => {
+    const s1el = document.getElementById('admin_'+m.id+'_s1');
+    const s2el = document.getElementById('admin_'+m.id+'_s2');
+    if (!s1el || !s2el) return;
+    if (s1el.value !== '' && s2el.value !== '') {
+      actualScores[m.id] = {s1:parseInt(s1el.value), s2:parseInt(s2el.value)};
+      rows.push({match_id:m.id, score1:parseInt(s1el.value), score2:parseInt(s2el.value), updated_at:new Date().toISOString()});
     } else { delete actualScores[m.id]; }
+    // Save knockout team name overrides
+    if (isKnockout) {
+      const t1el = document.getElementById('ko_'+m.id+'_t1');
+      const t2el = document.getElementById('ko_'+m.id+'_t2');
+      if (t1el && t2el) {
+        knockoutTeams[m.id] = {team1: t1el.value.trim()||'TBD', team2: t2el.value.trim()||'TBD'};
+      }
+    }
   });
   localStorage.setItem('fifa_actual', JSON.stringify(actualScores));
+  localStorage.setItem('fifa_knockout_teams', JSON.stringify(knockoutTeams));
   if (rows.length) {
     if (db) {
       toast('Saving to Supabase…');
-      const {error}=await db.from('actual_scores').upsert(rows,{onConflict:'match_id'});
-      toast(error?'⚠️ Saved locally: '+error.message:'✅ '+rows.length+' score(s) saved to Supabase!');
+      const {error} = await db.from('actual_scores').upsert(rows, {onConflict:'match_id'});
+      toast(error ? '⚠️ Saved locally: '+error.message : '✅ '+rows.length+' score(s) saved to Supabase!');
     } else { toast('✅ '+rows.length+' score(s) saved locally.'); }
-  } else { toast('No scores entered.'); }
+  } else { toast('✅ Knockout teams saved!'); }
   renderGroups(); renderLeaderboard(); renderAdminScores();
 }
 
