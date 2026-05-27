@@ -685,23 +685,23 @@ function shareApp(platform) {
 
 // ── VENUE LOCATION DATA ───────────────────────────────────────
 const VENUE_INFO = {
-  "Mexico City Stadium":     {stadium:"Estadio Azteca",            city:"Mexico City",     state:"Mexico"},
-  "Estadio Guadalajara":     {stadium:"Estadio Akron",             city:"Guadalajara",     state:"Jalisco, Mexico"},
-  "Atlanta Stadium":         {stadium:"Mercedes-Benz Stadium",     city:"Atlanta",         state:"GA"},
-  "Estadio Monterrey":       {stadium:"Estadio BBVA",              city:"Monterrey",       state:"Nuevo León, Mexico"},
-  "Toronto Stadium":         {stadium:"BMO Field",                 city:"Toronto",         state:"Ontario, Canada"},
-  "SF Bay Area Stadium":     {stadium:"Levi's Stadium",            city:"Santa Clara",     state:"CA"},
-  "Los Angeles Stadium":     {stadium:"SoFi Stadium",              city:"Inglewood",       state:"CA"},
-  "BC Place, Vancouver":     {stadium:"BC Place",                  city:"Vancouver",       state:"BC, Canada"},
-  "Seattle Stadium":         {stadium:"Lumen Field",               city:"Seattle",         state:"WA"},
-  "NY NJ Stadium":           {stadium:"MetLife Stadium",           city:"East Rutherford", state:"NJ"},
-  "Boston Stadium":          {stadium:"Gillette Stadium",          city:"Foxborough",      state:"MA"},
-  "Philadelphia Stadium":    {stadium:"Lincoln Financial Field",   city:"Philadelphia",    state:"PA"},
-  "Kansas City Stadium":     {stadium:"Arrowhead Stadium",         city:"Kansas City",     state:"MO"},
-  "Dallas Stadium":          {stadium:"AT&T Stadium",              city:"Arlington",       state:"TX"},
-  "Houston Stadium":         {stadium:"NRG Stadium",               city:"Houston",         state:"TX"},
-  "Miami Stadium":           {stadium:"Hard Rock Stadium",         city:"Miami Gardens",   state:"FL"},
-  "NY NJ Stadium -- Final":  {stadium:"MetLife Stadium (Final)",   city:"East Rutherford", state:"NJ"}
+  "Mexico City Stadium":     {stadium:"Estadio Azteca",            city:"Mexico City",     state:"Mexico",              map:"https://maps.google.com/?q=Estadio+Azteca,Mexico+City"},
+  "Estadio Guadalajara":     {stadium:"Estadio Akron",             city:"Guadalajara",     state:"Jalisco, Mexico",     map:"https://maps.google.com/?q=Estadio+Akron,Guadalajara,Mexico"},
+  "Atlanta Stadium":         {stadium:"Mercedes-Benz Stadium",     city:"Atlanta",         state:"GA",                  map:"https://maps.google.com/?q=Mercedes-Benz+Stadium,Atlanta,GA"},
+  "Estadio Monterrey":       {stadium:"Estadio BBVA",              city:"Monterrey",       state:"Nuevo León, Mexico",  map:"https://maps.google.com/?q=Estadio+BBVA,Monterrey,Mexico"},
+  "Toronto Stadium":         {stadium:"BMO Field",                 city:"Toronto",         state:"Ontario, Canada",     map:"https://maps.google.com/?q=BMO+Field,Toronto,Canada"},
+  "SF Bay Area Stadium":     {stadium:"Levi's Stadium",            city:"Santa Clara",     state:"CA",                  map:"https://maps.google.com/?q=Levis+Stadium,Santa+Clara,CA"},
+  "Los Angeles Stadium":     {stadium:"SoFi Stadium",              city:"Inglewood",       state:"CA",                  map:"https://maps.google.com/?q=SoFi+Stadium,Inglewood,CA"},
+  "BC Place, Vancouver":     {stadium:"BC Place",                  city:"Vancouver",       state:"BC, Canada",          map:"https://maps.google.com/?q=BC+Place,Vancouver,Canada"},
+  "Seattle Stadium":         {stadium:"Lumen Field",               city:"Seattle",         state:"WA",                  map:"https://maps.google.com/?q=Lumen+Field,Seattle,WA"},
+  "NY NJ Stadium":           {stadium:"MetLife Stadium",           city:"East Rutherford", state:"NJ",                  map:"https://maps.google.com/?q=MetLife+Stadium,East+Rutherford,NJ"},
+  "Boston Stadium":          {stadium:"Gillette Stadium",          city:"Foxborough",      state:"MA",                  map:"https://maps.google.com/?q=Gillette+Stadium,Foxborough,MA"},
+  "Philadelphia Stadium":    {stadium:"Lincoln Financial Field",   city:"Philadelphia",    state:"PA",                  map:"https://maps.google.com/?q=Lincoln+Financial+Field,Philadelphia,PA"},
+  "Kansas City Stadium":     {stadium:"Arrowhead Stadium",         city:"Kansas City",     state:"MO",                  map:"https://maps.google.com/?q=Arrowhead+Stadium,Kansas+City,MO"},
+  "Dallas Stadium":          {stadium:"AT&T Stadium",              city:"Arlington",       state:"TX",                  map:"https://maps.google.com/?q=ATT+Stadium,Arlington,TX"},
+  "Houston Stadium":         {stadium:"NRG Stadium",               city:"Houston",         state:"TX",                  map:"https://maps.google.com/?q=NRG+Stadium,Houston,TX"},
+  "Miami Stadium":           {stadium:"Hard Rock Stadium",         city:"Miami Gardens",   state:"FL",                  map:"https://maps.google.com/?q=Hard+Rock+Stadium,Miami+Gardens,FL"},
+  "NY NJ Stadium -- Final":  {stadium:"MetLife Stadium (Final)",   city:"East Rutherford", state:"NJ",                  map:"https://maps.google.com/?q=MetLife+Stadium,East+Rutherford,NJ"}
 };
 
 // ── NAVIGATION ────────────────────────────────────────────────
@@ -936,6 +936,7 @@ function renderTodayMatches() {
             '<div class="match-time">&#9200; '+m.time+' ET</div>'+
             '<div class="stadium-name">&#127967; '+vi.stadium+'</div>'+
             '<div class="venue-location">&#128205; '+vi.city+(vi.state?', '+vi.state:'')+'</div>'+
+            (vi.map ? '<div style="margin-top:4px"><a href="'+vi.map+'" target="_blank" rel="noopener" style="color:var(--red);font-size:.82rem;font-weight:600;text-decoration:none">&#128506; View on Google Maps ↗</a></div>' : '')+
           '</div>'+
         '</div>'+
         '<div class="match-team right"><span>'+m.team2+'</span> '+(FLAGS[m.team2]||'\u{1F3F3}️')+'</div>'+
@@ -999,11 +1000,16 @@ function renderMatches() {
     if (m.stage!==lastStage) { html+='<h3 style="margin:16px 0 8px;color:var(--navy);font-size:.95rem;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border);padding-bottom:6px">'+m.stage+'</h3>'; lastStage=m.stage; }
     const sc=actualScores[m.id], hasScore=sc!==undefined;
     const gTag = m.group!=='-' ? '<span class="group-tag g-'+m.group+'">Group '+m.group+'</span>' : '';
+    const vi = VENUE_INFO[m.venue] || {stadium:m.venue, city:'', state:'', map:null};
+    const venueLabel = vi.city ? vi.stadium+' · '+vi.city+(vi.state?', '+vi.state:'') : vi.stadium;
+    const mapLink = vi.map
+      ? '<a href="'+vi.map+'" target="_blank" rel="noopener" style="color:var(--red);text-decoration:none;font-weight:600">\u{1F4CD} '+venueLabel+' <span style="font-size:.68rem;border:1px solid var(--red);border-radius:4px;padding:1px 5px;vertical-align:middle">Map ↗</span></a>'
+      : '\u{1F4CD} '+venueLabel;
     html += '<div class="match-card">'+
       '<div class="match-team">'+(FLAGS[m.team1]||'\u{1F3F3}️')+' <span>'+m.team1+'</span></div>'+
       '<div class="match-center">'+(hasScore?'<div class="match-score">'+sc.s1+' – '+sc.s2+'</div>':'<div class="match-vs">VS</div>')+
       '<div class="match-meta">'+gTag+fmtDate(m.date)+' · '+m.time+'</div>'+
-      '<div class="match-meta" style="margin-top:2px">\u{1F4CD} '+m.venue+'</div></div>'+
+      '<div class="match-meta" style="margin-top:2px">'+mapLink+'</div></div>'+
       '<div class="match-team right"><span>'+m.team2+'</span> '+(FLAGS[m.team2]||'\u{1F3F3}️')+'</div></div>';
   });
   document.getElementById('matchesContainer').innerHTML = html || '<p style="color:var(--gray);text-align:center;padding:40px">No matches found.</p>';
