@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How to Play — FIFA 2026 Prediction</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',Arial,sans-serif;background:#F4F6F9;min-height:100vh;color:#1F2937}
+
+  /* ── PAGE LAYOUT ── */
+  .page-header{background:#1A3C5E;color:#fff;padding:18px 20px;text-align:center;border-bottom:3px solid #C8102E}
+  .page-header h1{font-size:1.15rem;font-weight:800}
+  .page-header p{font-size:.78rem;opacity:.75;margin-top:3px}
+  .container{max-width:480px;margin:0 auto;padding:20px 16px 40px}
+
+  /* ── STEP INDICATOR ── */
+  .step-bar{display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:24px}
+  .step-dot{width:32px;height:32px;border-radius:50%;background:#E5E7EB;color:#6B7280;font-size:.75rem;font-weight:800;display:flex;align-items:center;justify-content:center;transition:all .3s;flex-shrink:0;z-index:1}
+  .step-dot.done{background:#16A34A;color:#fff}
+  .step-dot.active{background:#1A3C5E;color:#fff;box-shadow:0 0 0 4px rgba(26,60,94,.2)}
+  .step-line{flex:1;height:3px;background:#E5E7EB;transition:background .3s;max-width:48px}
+  .step-line.done{background:#16A34A}
+
+  /* ── CARD ── */
+  .card{background:#fff;border-radius:14px;border:1px solid #E5E7EB;padding:24px 20px;margin-bottom:16px}
+  .step-title{font-size:1rem;font-weight:800;color:#1A3C5E;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+  .step-num{background:#1A3C5E;color:#fff;width:24px;height:24px;border-radius:50%;font-size:.72rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .step-desc{font-size:.85rem;color:#6B7280;margin-bottom:16px;margin-top:4px}
+
+  /* ── MOCK PHONE ── */
+  .phone{width:100%;max-width:300px;margin:0 auto;background:#fff;border-radius:20px;border:3px solid #1A3C5E;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.12)}
+  .phone-bar{background:#1A3C5E;padding:8px 12px;border-bottom:2px solid #C8102E;display:flex;align-items:center;gap:8px}
+  .phone-icon{width:28px;height:28px;background:#fff;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+  .phone-title{color:#fff;font-size:.75rem;font-weight:700;line-height:1.1}
+  .phone-sub{color:rgba(255,255,255,.6);font-size:.6rem}
+  .phone-body{padding:12px}
+
+  /* ── MOCK UI ELEMENTS ── */
+  .mock-input{border:2px solid #E5E7EB;border-radius:6px;padding:8px 10px;font-size:.82rem;color:#1F2937;margin-bottom:8px;width:100%}
+  .mock-input.focus{border-color:#1A3C5E}
+  .mock-btn{width:100%;padding:9px;border-radius:7px;border:none;font-weight:700;font-size:.82rem;cursor:default;margin-bottom:6px}
+  .btn-red{background:#C8102E;color:#fff}
+  .btn-navy{background:#1A3C5E;color:#fff}
+  .btn-gold{background:#D4AF37;color:#1A3C5E}
+  .btn-green{background:#16A34A;color:#fff}
+  .mock-label{font-size:.68rem;color:#6B7280;font-weight:600;margin-bottom:3px}
+  .mock-select{border:1px solid #E5E7EB;border-radius:6px;padding:7px 10px;font-size:.82rem;color:#1F2937;margin-bottom:8px;width:100%;background:#fff}
+  .pin-row{display:flex;gap:8px;justify-content:center;margin:10px 0}
+  .pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid #E5E7EB;background:#fff}
+  .pin-dot.filled{background:#1A3C5E;border-color:#1A3C5E}
+  .pin-key-row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px}
+  .pin-key{padding:10px;border:1px solid #E5E7EB;border-radius:6px;text-align:center;font-size:.9rem;font-weight:700;color:#1A3C5E;background:#fff}
+  .match-mini{border:1px solid #E5E7EB;border-radius:8px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;font-size:.75rem}
+  .team-name{font-weight:600;font-size:.72rem}
+  .pred-box{display:flex;gap:4px;align-items:center}
+  .pred-input{width:32px;text-align:center;border:2px solid #D4AF37;border-radius:5px;font-size:.85rem;font-weight:700;padding:3px}
+  .mock-badge{background:#E0F2FE;color:#0c4a6e;padding:2px 8px;border-radius:999px;font-size:.65rem;font-weight:700}
+  .lboard-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #F3F4F6;font-size:.78rem}
+  .lboard-rank{width:20px;font-weight:800;color:#1A3C5E;text-align:center}
+  .lboard-name{flex:1;font-weight:600}
+  .lboard-pts{font-weight:800;color:#D4AF37}
+  .pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:.68rem;font-weight:700}
+  .pill-blue{background:#EEF2FF;color:#3730a3}
+  .pill-amber{background:#FEF3C7;color:#92400e}
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes typing{0%{width:0}100%{width:100%}}
+  @keyframes blink{0%,100%{border-color:#1A3C5E}50%{border-color:transparent}}
+  @keyframes fillDot{0%{background:#fff;border-color:#E5E7EB}100%{background:#1A3C5E;border-color:#1A3C5E}}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+  @keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+  @keyframes checkmark{0%{opacity:0;transform:scale(.5)}100%{opacity:1;transform:scale(1)}}
+
+  .anim-fade{animation:fadeIn .5s ease both}
+  .anim-slide{animation:slideIn .5s ease both}
+  .anim-pulse{animation:pulse 1.5s ease infinite}
+
+  /* ── NAV BUTTONS ── */
+  .nav-row{display:flex;gap:12px;margin-top:20px}
+  .nav-btn{flex:1;padding:13px;border-radius:10px;border:none;font-weight:700;font-size:.9rem;cursor:pointer;transition:all .15s}
+  .nav-prev{background:#E5E7EB;color:#374151}.nav-prev:hover{background:#D1D5DB}
+  .nav-next{background:#1A3C5E;color:#fff}.nav-next:hover{background:#0d2440}
+  .nav-btn:disabled{opacity:.35;cursor:default}
+
+  /* ── SUCCESS SCREEN ── */
+  .success-box{text-align:center;padding:20px 0}
+  .success-icon{font-size:3.5rem;margin-bottom:12px;display:block}
+  .success-title{font-size:1.1rem;font-weight:800;color:#1A3C5E;margin-bottom:6px}
+  .success-sub{font-size:.82rem;color:#6B7280;line-height:1.5}
+
+  /* ── TIP BOX ── */
+  .tip{background:#EEF2FF;border-left:3px solid #3730a3;border-radius:0 8px 8px 0;padding:10px 12px;margin-top:12px;font-size:.78rem;color:#3730a3;line-height:1.5}
+  .tip strong{font-weight:700}
+
+  /* ── STEP HIDDEN ── */
+  .step-panel{display:none}.step-panel.active{display:block;animation:fadeIn .35s ease both}
+
+  /* ── SCORING TABLE ── */
+  .score-table{width:100%;border-collapse:collapse;font-size:.78rem;margin-top:8px}
+  .score-table th{background:#1A3C5E;color:#fff;padding:6px 10px;text-align:left}
+  .score-table td{padding:7px 10px;border-bottom:1px solid #F3F4F6}
+  .score-table tr:last-child td{border-bottom:none}
+  .pts{font-weight:800;color:#D4AF37;font-size:.9rem}
+
+  /* ── SHARE STRIP ── */
+  .share-strip{text-align:center;margin-top:24px;padding:16px;background:#fff;border-radius:12px;border:1px solid #E5E7EB}
+  .share-strip p{font-size:.8rem;color:#6B7280;margin-bottom:10px}
+  .share-link{font-size:.85rem;font-weight:700;color:#1A3C5E;background:#EEF2FF;padding:8px 14px;border-radius:6px;display:inline-block;letter-spacing:.3px}
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>🏆 FIFA 2026 Prediction — How to Play</h1>
+  <p>Follow these steps to join and start predicting!</p>
+</div>
+
+<div class="container">
+
+  <!-- Step indicator -->
+  <div class="step-bar" id="stepBar">
+    <div class="step-dot active" id="dot1">1</div>
+    <div class="step-line" id="line1"></div>
+    <div class="step-dot" id="dot2">2</div>
+    <div class="step-line" id="line2"></div>
+    <div class="step-dot" id="dot3">3</div>
+    <div class="step-line" id="line3"></div>
+    <div class="step-dot" id="dot4">4</div>
+    <div class="step-line" id="line4"></div>
+    <div class="step-dot" id="dot5">5</div>
+  </div>
+
+  <!-- ── STEP 1: Visit & Join ── -->
+  <div class="step-panel active" id="step1">
+    <div class="card">
+      <div class="step-title"><div class="step-num">1</div> Visit the site & Join</div>
+      <div class="step-desc">Open your browser and go to the competition site. Click <strong>+ Join</strong> in the top bar.</div>
+
+      <div class="phone">
+        <div class="phone-bar">
+          <div class="phone-icon">🏆</div>
+          <div><div class="phone-title">FIFA World Cup 2026™</div><div class="phone-sub">Score Prediction</div></div>
+        </div>
+        <div class="phone-body">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
+            <span class="pill pill-blue">⚽ 12 Players</span>
+            <span class="pill pill-amber">⏳ 5 Days left</span>
+            <button class="mock-btn btn-red anim-pulse" style="width:auto;padding:5px 12px;font-size:.72rem;margin:0">+ Join</button>
+          </div>
+          <div style="background:#EEF2FF;border-radius:8px;padding:10px;font-size:.75rem;color:#3730a3;text-align:center;font-weight:600">
+            ☝️ Tap <strong>+ Join</strong> in the header
+          </div>
+        </div>
+      </div>
+
+      <div class="tip"><strong>Site address:</strong> fifa2026prediction.com</div>
+    </div>
+
+    <div class="card">
+      <div class="step-title" style="margin-bottom:8px"><span>📝</span> Fill in the Join form</div>
+      <div class="phone">
+        <div class="phone-bar">
+          <div class="phone-icon">📝</div>
+          <div><div class="phone-title">Join Competition</div><div class="phone-sub">Create your account</div></div>
+        </div>
+        <div class="phone-body">
+          <div class="mock-label">Your Name</div>
+          <div class="mock-input focus" id="nameTyping" style="overflow:hidden;white-space:nowrap">John</div>
+          <div class="mock-label">Choose a 4-digit PIN</div>
+          <div class="mock-input">••••</div>
+          <div style="font-size:.65rem;color:#6B7280;margin-bottom:10px">Remember this PIN — you'll need it every time you log in</div>
+          <button class="mock-btn btn-navy">⚽ Join Now</button>
+          <div style="text-align:center;font-size:.72rem;color:#16A34A;font-weight:700;margin-top:6px">✅ John, Added successfully!</div>
+        </div>
+      </div>
+      <div class="tip"><strong>PIN tip:</strong> Pick something easy to remember like your birth year or favourite number. Write it down!</div>
+    </div>
+  </div>
+
+  <!-- ── STEP 2: Login ── -->
+  <div class="step-panel" id="step2">
+    <div class="card">
+      <div class="step-title"><div class="step-num">2</div> Select your name & enter PIN</div>
+      <div class="step-desc">Next time you visit the site, select your name from the dropdown and enter your PIN to access your predictions.</div>
+
+      <div class="phone">
+        <div class="phone-bar">
+          <div class="phone-icon">🔑</div>
+          <div><div class="phone-title">Select A Player</div><div class="phone-sub">Then enter your PIN</div></div>
+        </div>
+        <div class="phone-body">
+          <div class="mock-label">Select A Player</div>
+          <select class="mock-select"><option>John ✓</option></select>
+          <div style="border:1px solid #E5E7EB;border-radius:10px;padding:12px;margin-top:4px">
+            <div style="text-align:center;font-size:.8rem;font-weight:700;color:#1A3C5E;margin-bottom:8px">🔒 Enter your PIN</div>
+            <div class="pin-row">
+              <div class="pin-dot filled"></div>
+              <div class="pin-dot filled"></div>
+              <div class="pin-dot filled"></div>
+              <div class="pin-dot filled"></div>
+            </div>
+            <div class="pin-key-row">
+              <div class="pin-key">1</div><div class="pin-key">2</div><div class="pin-key">3</div>
+              <div class="pin-key">4</div><div class="pin-key">5</div><div class="pin-key">6</div>
+              <div class="pin-key">7</div><div class="pin-key">8</div><div class="pin-key">9</div>
+              <div class="pin-key" style="grid-column:span 3;background:#16A34A;color:#fff">✓ Confirm</div>
+            </div>
+          </div>
+          <div style="text-align:center;font-size:.72rem;color:#16A34A;font-weight:700;margin-top:8px">✅ Welcome back, John!</div>
+        </div>
+      </div>
+
+      <div class="tip"><strong>Forgotten your PIN?</strong> Contact the admin at zajuzam@outlook.com to reset it.</div>
+    </div>
+  </div>
+
+  <!-- ── STEP 3: Make Predictions ── -->
+  <div class="step-panel" id="step3">
+    <div class="card">
+      <div class="step-title"><div class="step-num">3</div> Make your score predictions</div>
+      <div class="step-desc">Tap the <strong>Predictions</strong> tab. Enter the score you think each match will end with, then tap <strong>Save All Predictions</strong>.</div>
+
+      <div class="phone">
+        <div class="phone-bar">
+          <div class="phone-icon">✏️</div>
+          <div><div class="phone-title">Predictions</div><div class="phone-sub">Logged in as John</div></div>
+        </div>
+        <div class="phone-body">
+          <div class="match-mini">
+            <div>
+              <div class="team-name">🇧🇷 Brazil</div>
+            </div>
+            <div class="pred-box">
+              <input class="pred-input" value="2" readonly>
+              <span style="font-weight:800;color:#9CA3AF">–</span>
+              <input class="pred-input" value="1" readonly>
+            </div>
+            <div>
+              <div class="team-name" style="text-align:right">Morocco 🇲🇦</div>
+            </div>
+          </div>
+          <div class="match-mini">
+            <div>
+              <div class="team-name">🏴󠁧󠁢󠁥󠁮󠁧󠁿 England</div>
+            </div>
+            <div class="pred-box">
+              <input class="pred-input" value="3" readonly>
+              <span style="font-weight:800;color:#9CA3AF">–</span>
+              <input class="pred-input" value="0" readonly>
+            </div>
+            <div>
+              <div class="team-name" style="text-align:right">Croatia 🇭🇷</div>
+            </div>
+          </div>
+          <div class="match-mini">
+            <div>
+              <div class="team-name">🇦🇷 Argentina</div>
+            </div>
+            <div class="pred-box">
+              <input class="pred-input" value="1" readonly>
+              <span style="font-weight:800;color:#9CA3AF">–</span>
+              <input class="pred-input" value="1" readonly>
+            </div>
+            <div>
+              <div class="team-name" style="text-align:right">France 🇫🇷</div>
+            </div>
+          </div>
+          <button class="mock-btn btn-green" style="margin-top:8px">💾 Save All Predictions</button>
+        </div>
+      </div>
+
+      <div class="tip"><strong>Important:</strong> You can update predictions any time <em>before</em> a match kicks off. Once a game starts, that prediction is locked.</div>
+    </div>
+  </div>
+
+  <!-- ── STEP 4: Scoring ── -->
+  <div class="step-panel" id="step4">
+    <div class="card">
+      <div class="step-title"><div class="step-num">4</div> How points are scored</div>
+      <div class="step-desc">Points are awarded after each match result is confirmed.</div>
+
+      <table class="score-table">
+        <tr><th>Prediction</th><th>Points</th></tr>
+        <tr>
+          <td>🎯 <strong>Exact score</strong> (e.g. predicted 2–1, actual 2–1)</td>
+          <td><span class="pts">3 pts</span></td>
+        </tr>
+        <tr>
+          <td>✅ <strong>Correct result</strong> (win/draw/loss, wrong score)</td>
+          <td><span class="pts">1 pt</span></td>
+        </tr>
+        <tr>
+          <td>❌ <strong>Wrong result</strong></td>
+          <td><span class="pts">0 pts</span></td>
+        </tr>
+      </table>
+
+      <div class="tip" style="margin-top:12px"><strong>Example:</strong> Real score is 2–1. You predicted 2–1 → <strong>3 points</strong>. Your friend predicted 1–0 → <strong>1 point</strong> (got the win right). Another friend predicted 0–2 → <strong>0 points</strong>.</div>
+    </div>
+  </div>
+
+  <!-- ── STEP 5: Leaderboard ── -->
+  <div class="step-panel" id="step5">
+    <div class="card">
+      <div class="step-title"><div class="step-num">5</div> Check the Leaderboard</div>
+      <div class="step-desc">Tap <strong>Leaderboard</strong> to see how you rank against everyone. Updates automatically after each match.</div>
+
+      <div class="phone">
+        <div class="phone-bar">
+          <div class="phone-icon">🏅</div>
+          <div><div class="phone-title">Leaderboard</div><div class="phone-sub">Live standings</div></div>
+        </div>
+        <div class="phone-body">
+          <div class="lboard-row">
+            <div class="lboard-rank">🥇</div>
+            <div class="lboard-name">Saju</div>
+            <div><span class="mock-badge">12 exact</span></div>
+            <div class="lboard-pts">42 pts</div>
+          </div>
+          <div class="lboard-row" style="background:#EEF2FF;border-radius:6px;padding:6px 4px">
+            <div class="lboard-rank">🥈</div>
+            <div class="lboard-name" style="color:#1A3C5E;font-weight:800">John 👈 You</div>
+            <div><span class="mock-badge">9 exact</span></div>
+            <div class="lboard-pts">36 pts</div>
+          </div>
+          <div class="lboard-row">
+            <div class="lboard-rank">🥉</div>
+            <div class="lboard-name">Priya</div>
+            <div><span class="mock-badge">8 exact</span></div>
+            <div class="lboard-pts">31 pts</div>
+          </div>
+          <div class="lboard-row">
+            <div class="lboard-rank" style="color:#9CA3AF">4</div>
+            <div class="lboard-name" style="color:#6B7280">Ravi</div>
+            <div><span class="mock-badge">6 exact</span></div>
+            <div class="lboard-pts" style="color:#9CA3AF">24 pts</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tip"><strong>Scores update automatically</strong> every morning after each match day. No need to refresh — just check back the next day!</div>
+    </div>
+
+    <div class="success-box">
+      <span class="success-icon">🎉</span>
+      <div class="success-title">You're ready to play!</div>
+      <div class="success-sub">Head to <strong>fifa2026prediction.com</strong><br>join the competition and start predicting.<br>Good luck! 🏆</div>
+    </div>
+
+    <div class="share-strip">
+      <p>Share this guide with other players</p>
+      <div class="share-link">fifa2026prediction.com/how-to-play.html</div>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <div class="nav-row">
+    <button class="nav-btn nav-prev" id="prevBtn" onclick="changeStep(-1)" disabled>← Back</button>
+    <button class="nav-btn nav-next" id="nextBtn" onclick="changeStep(1)">Next →</button>
+  </div>
+
+</div>
+
+<script>
+let current = 1;
+const total = 5;
+
+function changeStep(dir) {
+  const prev = current;
+  current = Math.min(total, Math.max(1, current + dir));
+  if (current === prev) return;
+
+  document.getElementById('step' + prev).classList.remove('active');
+  document.getElementById('step' + current).classList.add('active');
+
+  // Update dots and lines
+  for (let i = 1; i <= total; i++) {
+    const dot = document.getElementById('dot' + i);
+    dot.classList.remove('active', 'done');
+    if (i < current) dot.classList.add('done');
+    else if (i === current) dot.classList.add('active');
+  }
+  for (let i = 1; i < total; i++) {
+    const line = document.getElementById('line' + i);
+    line.classList.toggle('done', i < current);
+  }
+
+  document.getElementById('prevBtn').disabled = current === 1;
+  document.getElementById('nextBtn').textContent = current === total ? '🏆 Go Play!' : 'Next →';
+  if (current === total && document.getElementById('nextBtn').textContent.includes('Play')) {
+    document.getElementById('nextBtn').onclick = () => window.location.href = 'FIFA2026_Prediction.html';
+  } else {
+    document.getElementById('nextBtn').onclick = () => changeStep(1);
+  }
+
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+</script>
+</body>
+</html>
