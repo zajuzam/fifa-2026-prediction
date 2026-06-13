@@ -1,0 +1,5 @@
+I needed the following modifications
+    1)Add a New Tab "Todays Match ".Here Display all the matches happening on that day. Location Details(Eg Stadium Name,City and State). Time In EST
+    2)"Add a Player Button" Button here when you click the button Insert the Data in to the participants table ,have a spinner until Insertion completes.
+    2)"Select A Player Drop Down ,fetch the Data from the participants table
+    4)Remove the "Google Sheet ID (optional)" Label and Test Box
