@@ -10,12 +10,20 @@
   :root{--navy:#1A3C5E;--red:#C8102E;--gold:#D4AF37;--light:#F4F6F9;--white:#fff;--gray:#6B7280;--border:#E5E7EB;--green:#16A34A;--orange:#EA580C}
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'Segoe UI',Arial,sans-serif;background:var(--light);color:#1F2937;min-height:100vh}
-  header{background:linear-gradient(135deg,var(--navy) 0%,#0d2440 100%);color:#fff;padding:0}
+  header{background:#fff;border-bottom:3px solid var(--navy);box-shadow:0 1px 6px rgba(0,0,0,.07);padding:0;color:var(--navy)}
   .header-inner{max-width:1200px;margin:0 auto;padding:20px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
   .trophy{font-size:48px;line-height:1}
-  .header-text h1{font-size:1.8rem;font-weight:800;letter-spacing:-0.5px}
-  .header-text p{opacity:.75;font-size:.9rem;margin-top:2px}
-  .badge{background:var(--gold);color:var(--navy);padding:3px 10px;border-radius:999px;font-size:.75rem;font-weight:700;margin-left:auto;white-space:nowrap}
+  .header-text h1{font-size:1.6rem;font-weight:800;letter-spacing:-0.5px;color:var(--navy)}
+  .header-text p{color:var(--gray);font-size:.85rem;margin-top:2px}
+  .badge{background:var(--navy);color:#fff;padding:4px 12px;border-radius:999px;font-size:.75rem;font-weight:700;white-space:nowrap}
+  .header-icon{font-size:36px;line-height:1}
+  .stat-pill{background:var(--light);border:1px solid var(--border);border-radius:999px;padding:4px 12px;font-size:.8rem;color:var(--navy);white-space:nowrap}
+  .join-btn-hdr{background:var(--red);color:#fff;border:none;border-radius:999px;padding:6px 16px;font-size:.82rem;font-weight:700;cursor:pointer;white-space:nowrap}
+  .join-btn-hdr:hover{opacity:.88}
+  .share-wrap{position:relative}
+  .share-drop{display:none;position:absolute;right:0;top:110%;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:160px;z-index:999;padding:6px 0}
+  .share-drop button{display:block;width:100%;padding:9px 16px;border:none;background:none;text-align:left;cursor:pointer;font-size:.9rem;white-space:nowrap}
+  .share-drop button:hover{background:var(--light)}
   nav{background:var(--navy);border-bottom:3px solid var(--red)}
   .tabs{max-width:1200px;margin:0 auto;display:flex;gap:0}
   .tab{padding:14px 22px;color:rgba(255,255,255,.7);cursor:pointer;font-size:.9rem;font-weight:600;border-bottom:3px solid transparent;margin-bottom:-3px;transition:all .2s;white-space:nowrap}
@@ -123,33 +131,39 @@
   .join-btn{background:var(--gold);color:var(--navy);padding:8px 20px;border-radius:8px;border:none;cursor:pointer;font-weight:800;font-size:.9rem;margin-left:auto;transition:all .15s}
   .join-btn:hover{filter:brightness(.92)}
 </style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ffffff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="FIFA 2026">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 </head>
 <body>
 <header>
   <div class="header-inner">
-    <div class="trophy">&#127942;</div>
-    <div class="header-text"><h1>FIFA World Cup 2026&#8482;</h1><p>Score Prediction Competition &middot; Canada &middot; Mexico &middot; USA</p></div>
-    <div class="badge" id="userBadge">Not logged in</div>
+    <div class="header-icon">&#127942;</div>
+    <div class="header-meta">
+      <h1>FIFA World Cup 2026&#8482;</h1>
+      <p>Score Prediction &middot; Canada &middot; Mexico &middot; USA &middot; Jun 11 &ndash; Jul 19, 2026</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap">
+      <span class="stat-pill">&#128100; <b id="bannerPlayers">0</b> Players</span>
+      <span class="stat-pill">&#128197; <b id="bannerDays">26</b> Days left</span>
+      <button class="join-btn-hdr" onclick="openModal('selfRegModal')">+ Join</button>
+      <div class="share-wrap">
+        <button class="join-btn-hdr" style="background:var(--gray)" onclick="toggleShareDrop()">&#128279; Share &#9660;</button>
+        <div class="share-drop" id="shareDrop">
+          <button onclick="shareApp('wa');toggleShareDrop()">&#128241; WhatsApp</button>
+          <button onclick="shareApp('fb');toggleShareDrop()">&#128100; Facebook</button>
+          <button onclick="shareApp('x');toggleShareDrop()">&#10006; X / Twitter</button>
+          <button onclick="shareApp('copy');toggleShareDrop()">&#128203; Copy Link</button>
+        </div>
+      </div>
+      <span class="badge" id="userBadge">Not logged in</span>
+    </div>
   </div>
 </header>
-<div class="comp-banner">
-  <div style="text-align:center">
-    <h2>&#127942; FIFA 2026 Score Prediction Competition</h2>
-    <p>&#128197; Tournament: Jun 11 – Jul 19, 2026 &nbsp;|&nbsp; &#127468;&#127463; Canada &nbsp;&#127474;&#127485; Mexico &nbsp;&#127482;&#127480; USA</p>
-  </div>
-  <div class="prize-stats">
-    <div class="prize-stat"><div class="num" id="bannerPlayers">0</div><div class="lbl">Players Joined</div></div>
-    <div class="prize-stat"><div class="num" id="bannerDays">26</div><div class="lbl">Days to Kickoff</div></div>
-  </div>
-  <button class="join-btn" onclick="openModal('selfRegModal')">&#9917; Join Competition</button>
-</div>
-<div class="share-strip">
-  <span>&#128279; Share with friends:</span>
-  <button class="share-btn share-wa" onclick="shareApp('wa')">&#128241; WhatsApp</button>
-  <button class="share-btn share-fb" onclick="shareApp('fb')">&#128100; Facebook</button>
-  <button class="share-btn share-x" onclick="shareApp('x')">&#10006; X / Twitter</button>
-  <button class="share-btn share-copy" onclick="shareApp('copy')">&#128203; Copy Link</button>
-</div>
+
 <nav>
   <div class="tabs">
     <div class="tab active" onclick="showPage('groups')">&#128193; Groups</div>
@@ -157,8 +171,9 @@
     <div class="tab" onclick="showPage('todaysmatch')">&#128197; Today's Match</div>
     <div class="tab" onclick="showPage('predict')">&#9999;&#65039; Predictions</div>
     <div class="tab" onclick="showPage('leaderboard')">&#127885; Leaderboard</div>
-    <div class="tab" onclick="showPage('admin')">&#9881;&#65039; Admin</div>
+    <div class="tab" id="adminTab" onclick="showPage('admin')" style="display:none">&#9881;&#65039; Admin</div>
     <div class="tab" onclick="showPage('contact')">&#9993;&#65039; Contact</div>
+    <div class="tab" onclick="window.open('how-to-play.html','_blank')">&#10067; How to Play</div>
   </div>
 </nav>
 <main>
@@ -258,15 +273,7 @@
 </div>
 
 <div class="page" id="page-admin">
-  <div id="adminLock" class="card">
-    <div class="card-hdr">&#128274; Admin Access Required</div>
-    <div class="card-body" style="max-width:340px">
-      <p style="margin-bottom:12px;color:var(--gray);font-size:.9rem">Enter the admin password to update actual match scores.</p>
-      <input type="password" id="adminPwInput" placeholder="Password" style="width:100%;padding:9px 12px;border:2px solid var(--border);border-radius:7px;font-size:.95rem;margin-bottom:10px">
-      <button class="btn btn-primary" onclick="unlockAdmin()">Unlock</button>
-    </div>
-  </div>
-  <div id="adminPanel" style="display:none">
+  <div id="adminPanel">
     <div class="alert alert-success">&#10003; Admin mode active &#8212; enter scores and manage knockout teams below.</div>
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
       <div class="filter-row" style="margin-bottom:0;flex-wrap:wrap">
@@ -520,9 +527,17 @@ let currentUser     = localStorage.getItem('fifa_user') || '';
 let currentUserTemp = '';
 let pinVerified     = !!localStorage.getItem('fifa_user'); // restored from session
 let adminUnlocked   = false;
-const ADMIN_PASS    = '123GReetings@!';
 
 // ── INIT ──────────────────────────────────────────────────────
+function toggleShareDrop() {
+  const d = document.getElementById('shareDrop');
+  d.style.display = d.style.display === 'block' ? 'none' : 'block';
+  if (d.style.display === 'block') {
+    setTimeout(() => document.addEventListener('click', function close(e) {
+      if (!e.target.closest('.share-wrap')) { d.style.display='none'; document.removeEventListener('click', close); }
+    }), 0);
+  }
+}
 function init() {
   // Clear stale hardcoded 'Saju' default if it was saved to localStorage
   const cached = localStorage.getItem('fifa_participants');
@@ -540,7 +555,18 @@ function init() {
   renderGroups(); renderMatches(); renderTodayMatches(); renderLeaderboard(); updateBanner();
   document.getElementById('dataSource').textContent = db ? '⏳ Connecting to Supabase…' : '\u{1F4CB} Using built-in data (Supabase SDK not loaded)';
   // Load participants first (populates dropdown), then load the rest
-  loadParticipants().then(() => { updateBanner(); loadFromSupabase(); });
+  loadParticipants().then(() => {
+    updateBanner();
+    // Restore admin tab if user is admin
+    if (currentUser) {
+      const pd = participantData.find(p => p.name === currentUser);
+      if (pd && pd.is_admin) {
+        adminUnlocked = true;
+        document.getElementById('adminTab').style.display = 'block';
+      }
+    }
+    loadFromSupabase();
+  });
 }
 
 // ── SUPABASE LOAD ─────────────────────────────────────────────
@@ -549,24 +575,22 @@ function init() {
 async function loadParticipants() {
   if (!db) { populateUserSelect(); return; }
   try {
-    // Query name only — always works even if pin column doesn't exist yet
-    const {data, error} = await db.from('participants').select('name').order('id');
+    const {data, error} = await db.from('participants').select('name, pin, is_admin').order('id');
     if (error) throw error;
     if (data && data.length) {
-      participants = data.map(p => p.name);
-      localStorage.setItem('fifa_participants', JSON.stringify(participants));
-    }
-    // Now try to also fetch PINs (only works after ALTER TABLE has been run)
-    const {data:pinData} = await db.from('participants').select('name, pin').order('id');
-    if (pinData && pinData.length) {
-      participantData = pinData;
+      participants    = data.map(p => p.name);
+      participantData = data;
+      localStorage.setItem('fifa_participants',     JSON.stringify(participants));
       localStorage.setItem('fifa_participant_data', JSON.stringify(participantData));
     }
   } catch(err) {
     console.warn('Participant load error:', err.message);
-    // Fall back to localStorage cache — dropdown still gets populated below
+    try {
+      const {data:n} = await db.from('participants').select('name').order('id');
+      if (n && n.length) { participants = n.map(p => p.name); }
+    } catch(e) {}
   }
-  populateUserSelect(); // Always called, regardless of success or failure
+  populateUserSelect();
 }
 
 async function loadFromSupabase() {
@@ -621,7 +645,8 @@ async function selfRegister() {
   document.getElementById('regFooter').style.display  = 'none';
 
   if (db) {
-    const {error} = await db.from('participants').insert({name, pin});
+    const ipInfo = await getIpInfo();
+    const {error} = await db.from('participants').insert({name, pin, ...ipInfo});
     if (error && error.code !== '23505') {
       document.getElementById('regSpinner').style.display = 'none';
       document.getElementById('regFooter').style.display  = 'flex';
@@ -661,23 +686,23 @@ function shareApp(platform) {
 
 // ── VENUE LOCATION DATA ───────────────────────────────────────
 const VENUE_INFO = {
-  "Mexico City Stadium":     {stadium:"Estadio Azteca",            city:"Mexico City",     state:"Mexico"},
-  "Estadio Guadalajara":     {stadium:"Estadio Akron",             city:"Guadalajara",     state:"Jalisco, Mexico"},
-  "Atlanta Stadium":         {stadium:"Mercedes-Benz Stadium",     city:"Atlanta",         state:"GA"},
-  "Estadio Monterrey":       {stadium:"Estadio BBVA",              city:"Monterrey",       state:"Nuevo León, Mexico"},
-  "Toronto Stadium":         {stadium:"BMO Field",                 city:"Toronto",         state:"Ontario, Canada"},
-  "SF Bay Area Stadium":     {stadium:"Levi's Stadium",            city:"Santa Clara",     state:"CA"},
-  "Los Angeles Stadium":     {stadium:"SoFi Stadium",              city:"Inglewood",       state:"CA"},
-  "BC Place, Vancouver":     {stadium:"BC Place",                  city:"Vancouver",       state:"BC, Canada"},
-  "Seattle Stadium":         {stadium:"Lumen Field",               city:"Seattle",         state:"WA"},
-  "NY NJ Stadium":           {stadium:"MetLife Stadium",           city:"East Rutherford", state:"NJ"},
-  "Boston Stadium":          {stadium:"Gillette Stadium",          city:"Foxborough",      state:"MA"},
-  "Philadelphia Stadium":    {stadium:"Lincoln Financial Field",   city:"Philadelphia",    state:"PA"},
-  "Kansas City Stadium":     {stadium:"Arrowhead Stadium",         city:"Kansas City",     state:"MO"},
-  "Dallas Stadium":          {stadium:"AT&T Stadium",              city:"Arlington",       state:"TX"},
-  "Houston Stadium":         {stadium:"NRG Stadium",               city:"Houston",         state:"TX"},
-  "Miami Stadium":           {stadium:"Hard Rock Stadium",         city:"Miami Gardens",   state:"FL"},
-  "NY NJ Stadium -- Final":  {stadium:"MetLife Stadium (Final)",   city:"East Rutherford", state:"NJ"}
+  "Mexico City Stadium":     {stadium:"Estadio Azteca",            city:"Mexico City",     state:"Mexico",              map:"https://maps.google.com/?q=Estadio+Azteca,Mexico+City"},
+  "Estadio Guadalajara":     {stadium:"Estadio Akron",             city:"Guadalajara",     state:"Jalisco, Mexico",     map:"https://maps.google.com/?q=Estadio+Akron,Guadalajara,Mexico"},
+  "Atlanta Stadium":         {stadium:"Mercedes-Benz Stadium",     city:"Atlanta",         state:"GA",                  map:"https://maps.google.com/?q=Mercedes-Benz+Stadium,Atlanta,GA"},
+  "Estadio Monterrey":       {stadium:"Estadio BBVA",              city:"Monterrey",       state:"Nuevo León, Mexico",  map:"https://maps.google.com/?q=Estadio+BBVA,Monterrey,Mexico"},
+  "Toronto Stadium":         {stadium:"BMO Field",                 city:"Toronto",         state:"Ontario, Canada",     map:"https://maps.google.com/?q=BMO+Field,Toronto,Canada"},
+  "SF Bay Area Stadium":     {stadium:"Levi's Stadium",            city:"Santa Clara",     state:"CA",                  map:"https://maps.google.com/?q=Levis+Stadium,Santa+Clara,CA"},
+  "Los Angeles Stadium":     {stadium:"SoFi Stadium",              city:"Inglewood",       state:"CA",                  map:"https://maps.google.com/?q=SoFi+Stadium,Inglewood,CA"},
+  "BC Place, Vancouver":     {stadium:"BC Place",                  city:"Vancouver",       state:"BC, Canada",          map:"https://maps.google.com/?q=BC+Place,Vancouver,Canada"},
+  "Seattle Stadium":         {stadium:"Lumen Field",               city:"Seattle",         state:"WA",                  map:"https://maps.google.com/?q=Lumen+Field,Seattle,WA"},
+  "NY NJ Stadium":           {stadium:"MetLife Stadium",           city:"East Rutherford", state:"NJ",                  map:"https://maps.google.com/?q=MetLife+Stadium,East+Rutherford,NJ"},
+  "Boston Stadium":          {stadium:"Gillette Stadium",          city:"Foxborough",      state:"MA",                  map:"https://maps.google.com/?q=Gillette+Stadium,Foxborough,MA"},
+  "Philadelphia Stadium":    {stadium:"Lincoln Financial Field",   city:"Philadelphia",    state:"PA",                  map:"https://maps.google.com/?q=Lincoln+Financial+Field,Philadelphia,PA"},
+  "Kansas City Stadium":     {stadium:"Arrowhead Stadium",         city:"Kansas City",     state:"MO",                  map:"https://maps.google.com/?q=Arrowhead+Stadium,Kansas+City,MO"},
+  "Dallas Stadium":          {stadium:"AT&T Stadium",              city:"Arlington",       state:"TX",                  map:"https://maps.google.com/?q=ATT+Stadium,Arlington,TX"},
+  "Houston Stadium":         {stadium:"NRG Stadium",               city:"Houston",         state:"TX",                  map:"https://maps.google.com/?q=NRG+Stadium,Houston,TX"},
+  "Miami Stadium":           {stadium:"Hard Rock Stadium",         city:"Miami Gardens",   state:"FL",                  map:"https://maps.google.com/?q=Hard+Rock+Stadium,Miami+Gardens,FL"},
+  "NY NJ Stadium -- Final":  {stadium:"MetLife Stadium (Final)",   city:"East Rutherford", state:"NJ",                  map:"https://maps.google.com/?q=MetLife+Stadium,East+Rutherford,NJ"}
 };
 
 // ── NAVIGATION ────────────────────────────────────────────────
@@ -741,6 +766,11 @@ function verifyPin() {
     document.getElementById('userSelect').value = currentUser;
     document.getElementById('userSelect').disabled = true;
     document.getElementById('logoutBtn').style.display = 'inline-block';
+    const playerData = participantData.find(p => p.name === currentUser);
+    if (playerData && playerData.is_admin) {
+      adminUnlocked = true;
+      document.getElementById('adminTab').style.display = 'block';
+    }
     closeModal('pinModal');
     renderPredictions();
   } else {
@@ -755,13 +785,45 @@ function cancelPin() {
   closeModal('pinModal');
 }
 function logout() {
-  currentUser = ''; currentUserTemp = ''; pinVerified = false;
+  currentUser = ''; currentUserTemp = ''; pinVerified = false; adminUnlocked = false;
   localStorage.removeItem('fifa_user');
   document.getElementById('userBadge').textContent = 'Not logged in';
   document.getElementById('userSelect').disabled = false;
   document.getElementById('userSelect').value = '';
   document.getElementById('logoutBtn').style.display = 'none';
+  document.getElementById('adminTab').style.display = 'none';
+  showPage('groups');
   renderPredictions();
+}
+function fetchWithTimeout(url, ms) {
+  return new Promise((resolve, reject) => {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), ms);
+    fetch(url, {signal: ctrl.signal})
+      .then(r => { clearTimeout(tid); resolve(r); })
+      .catch(e => { clearTimeout(tid); reject(e); });
+  });
+}
+async function getIpInfo() {
+  try {
+    const res = await fetchWithTimeout('https://ipapi.co/json/', 5000);
+    if (!res.ok) throw new Error('status '+res.status);
+    const d = await res.json();
+    if (d.ip) return { ip_address: d.ip, country: d.country_name || d.country || '' };
+  } catch(e) { console.warn('ipapi.co failed:', e.message); }
+  try {
+    const res2 = await fetchWithTimeout('https://www.cloudflare.com/cdn-cgi/trace', 4000);
+    const txt  = await res2.text();
+    const ip   = (txt.match(/ip=(.+)/) || [])[1] || '';
+    const loc  = (txt.match(/loc=(.+)/) || [])[1] || '';
+    if (ip) return { ip_address: ip.trim(), country: loc.trim() };
+  } catch(e) { console.warn('CF trace failed:', e.message); }
+  try {
+    const res3 = await fetchWithTimeout('https://api.ipify.org?format=json', 4000);
+    const d3   = await res3.json();
+    if (d3.ip) return { ip_address: d3.ip, country: '' };
+  } catch(e) { console.warn('ipify failed:', e.message); }
+  return { ip_address: '', country: '' };
 }
 async function addPlayer() {
   const name = document.getElementById('newPlayerName').value.trim();
@@ -776,7 +838,8 @@ async function addPlayer() {
   document.getElementById('addPlayerSuccess').style.display = 'none';
 
   if (db) {
-    const {error} = await db.from('participants').insert({name, pin});
+    const ipInfo = await getIpInfo();
+    const {error} = await db.from('participants').insert({name, pin, ...ipInfo});
     if (error && error.code !== '23505') {
       document.getElementById('addPlayerSpinner').style.display = 'none';
       document.getElementById('addPlayerFooter').style.display = 'flex';
@@ -874,6 +937,7 @@ function renderTodayMatches() {
             '<div class="match-time">&#9200; '+m.time+' ET</div>'+
             '<div class="stadium-name">&#127967; '+vi.stadium+'</div>'+
             '<div class="venue-location">&#128205; '+vi.city+(vi.state?', '+vi.state:'')+'</div>'+
+            (vi.map ? '<div style="margin-top:4px"><a href="'+vi.map+'" target="_blank" rel="noopener" style="color:var(--red);font-size:.82rem;font-weight:600;text-decoration:none">&#128506; View on Google Maps ↗</a></div>' : '')+
           '</div>'+
         '</div>'+
         '<div class="match-team right"><span>'+m.team2+'</span> '+(FLAGS[m.team2]||'\u{1F3F3}️')+'</div>'+
@@ -937,11 +1001,16 @@ function renderMatches() {
     if (m.stage!==lastStage) { html+='<h3 style="margin:16px 0 8px;color:var(--navy);font-size:.95rem;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border);padding-bottom:6px">'+m.stage+'</h3>'; lastStage=m.stage; }
     const sc=actualScores[m.id], hasScore=sc!==undefined;
     const gTag = m.group!=='-' ? '<span class="group-tag g-'+m.group+'">Group '+m.group+'</span>' : '';
+    const vi = VENUE_INFO[m.venue] || {stadium:m.venue, city:'', state:'', map:null};
+    const venueLabel = vi.city ? vi.stadium+' · '+vi.city+(vi.state?', '+vi.state:'') : vi.stadium;
+    const mapLink = vi.map
+      ? '<a href="'+vi.map+'" target="_blank" rel="noopener" style="color:var(--red);text-decoration:none;font-weight:600">\u{1F4CD} '+venueLabel+' <span style="font-size:.68rem;border:1px solid var(--red);border-radius:4px;padding:1px 5px;vertical-align:middle">Map ↗</span></a>'
+      : '\u{1F4CD} '+venueLabel;
     html += '<div class="match-card">'+
       '<div class="match-team">'+(FLAGS[m.team1]||'\u{1F3F3}️')+' <span>'+m.team1+'</span></div>'+
       '<div class="match-center">'+(hasScore?'<div class="match-score">'+sc.s1+' – '+sc.s2+'</div>':'<div class="match-vs">VS</div>')+
       '<div class="match-meta">'+gTag+fmtDate(m.date)+' · '+m.time+'</div>'+
-      '<div class="match-meta" style="margin-top:2px">\u{1F4CD} '+m.venue+'</div></div>'+
+      '<div class="match-meta" style="margin-top:2px">'+mapLink+'</div></div>'+
       '<div class="match-team right"><span>'+m.team2+'</span> '+(FLAGS[m.team2]||'\u{1F3F3}️')+'</div></div>';
   });
   document.getElementById('matchesContainer').innerHTML = html || '<p style="color:var(--gray);text-align:center;padding:40px">No matches found.</p>';
@@ -985,20 +1054,31 @@ function renderPredictions() {
     if (!isKnockout && m.group !== lastGrp) { html+='<h3 style="margin:16px 0 8px;color:var(--navy);font-size:.9rem;font-weight:700"><span class="group-tag g-'+m.group+'">Group '+m.group+'</span></h3>'; lastGrp=m.group; }
     if (isKnockout && m.stage !== lastGrp) { html+='<h3 style="margin:16px 0 8px;color:var(--navy);font-size:.9rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border);padding-bottom:6px">⚡ '+m.stage+'</h3>'; lastGrp=m.stage; }
     const sc=actualScores[m.id], pred=userPreds[m.id]||{};
+    // Lock predictions once the match has kicked off (all matches are EDT = UTC-4)
+    const isLocked = (function(date, time) {
+      const m = time.match(/(\d+):(\d+)\s*(AM|PM)/i);
+      if (!m) return false;
+      let h = parseInt(m[1]), min = parseInt(m[2]);
+      if (m[3].toUpperCase() === 'PM' && h !== 12) h += 12;
+      if (m[3].toUpperCase() === 'AM' && h === 12) h = 0;
+      const kickoff = new Date(date + 'T' + String(h).padStart(2,'0') + ':' + String(min).padStart(2,'0') + ':00-04:00');
+      return Date.now() >= kickoff.getTime();
+    })(m.date, m.time);
     let ptsBadge='';
     if (sc!==undefined && pred.s1!==undefined) {
       const pts=calcPoints(pred.s1,pred.s2,sc.s1,sc.s2);
       ptsBadge = pts===3?'<span class="score-badge score-exact">⭐ +3 pts</span>':pts===1?'<span class="score-badge score-result">✓ +1 pt</span>':'<span class="score-badge score-wrong">✗ 0 pts</span>';
     }
+    const lockBadge = isLocked ? '<div style="margin-top:4px"><span class="locked-badge" style="display:inline-block">🔒 Locked</span></div>' : '';
     html += '<div class="match-card">'+
       '<div class="match-team">'+(FLAGS[t1]||'\u{1F3F3}️')+' <span>'+t1+'</span></div>'+
       '<div class="match-center"><div class="pred-inputs">'+
-      '<input type="number" min="0" max="20" id="pred_'+m.id+'_s1" value="'+(pred.s1!==undefined?pred.s1:'')+'" placeholder="–" data-mid="'+m.id+'" data-side="s1">'+
+      '<input type="number" min="0" max="20" id="pred_'+m.id+'_s1" value="'+(pred.s1!==undefined?pred.s1:'')+'" placeholder="–" data-mid="'+m.id+'" data-side="s1"'+(isLocked?' disabled style="background:#f3f4f6;color:#9ca3af;cursor:not-allowed"':'')+'>'+
       '<span class="dash">:</span>'+
-      '<input type="number" min="0" max="20" id="pred_'+m.id+'_s2" value="'+(pred.s2!==undefined?pred.s2:'')+'" placeholder="–" data-mid="'+m.id+'" data-side="s2">'+
+      '<input type="number" min="0" max="20" id="pred_'+m.id+'_s2" value="'+(pred.s2!==undefined?pred.s2:'')+'" placeholder="–" data-mid="'+m.id+'" data-side="s2"'+(isLocked?' disabled style="background:#f3f4f6;color:#9ca3af;cursor:not-allowed"':'')+'>'+
       '</div><div class="match-meta" style="margin-top:6px">'+fmtDate(m.date)+' · '+m.time+'</div>'+
       (sc!==undefined?'<div class="match-meta" style="color:var(--green);font-weight:600;margin-top:2px">Actual: '+sc.s1+'–'+sc.s2+'</div>':'')+
-      ptsBadge+'</div>'+
+      lockBadge+ptsBadge+'</div>'+
       '<div class="match-team right"><span>'+t2+'</span> '+(FLAGS[t2]||'\u{1F3F3}️')+'</div></div>';
   });
   document.getElementById('predictContainer').innerHTML = html || '<p style="color:var(--gray);text-align:center;padding:40px">All predictions submitted! \u{1F389}</p>';
@@ -1009,6 +1089,7 @@ async function saveAllPredictions() {
   if (!predictions[currentUser]) predictions[currentUser] = {};
   const rows = [];
   document.querySelectorAll('[data-side="s1"]').forEach(el => {
+    if (el.disabled) return; // skip locked matches
     const mid=el.dataset.mid, s1=el.value, s2El=document.getElementById('pred_'+mid+'_s2');
     const s2=s2El?s2El.value:'';
     if (s1!==''&&s2!=='') {
@@ -1060,15 +1141,6 @@ function renderLeaderboard() {
 }
 
 // ── ADMIN ─────────────────────────────────────────────────────
-function unlockAdmin() {
-  if (document.getElementById('adminPwInput').value===ADMIN_PASS) {
-    adminUnlocked=true;
-    document.getElementById('adminLock').style.display='none';
-    document.getElementById('adminPanel').style.display='block';
-    renderAdminScores();
-  } else { toast('Wrong password!'); }
-}
-
 function getTeam(m, side) {
   const ko = knockoutTeams[m.id];
   if (ko && ko[side] && ko[side] !== 'TBD') return ko[side];
@@ -1200,6 +1272,15 @@ function closeModal(id) { document.getElementById(id).classList.remove('open'); 
 document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('open'); }));
 
 init();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => console.log('SW registered:', reg.scope))
+      .catch(err => console.warn('SW registration failed:', err));
+  });
+}
 </script>
 </body>
 </html>
