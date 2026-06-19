@@ -177,6 +177,18 @@
   </div>
 </nav>
 <main>
+
+<div id="dataBanner" style="background:#fff3cd;border-left:5px solid #f59e0b;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:0">
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:1.4rem">⚠️</span>
+    <div>
+      <strong style="color:#92400e;font-size:.95rem">⚽ Important Notice — Please Re-enter Your Predictions</strong>
+      <p style="color:#78350f;font-size:.83rem;margin-top:2px">Due to a technical issue, saved predictions have been lost. <strong>The leaderboard and your points are preserved</strong> — no scores have been affected. You only need to re-enter predictions for <strong>today's matches onwards (from 19 Jun)</strong>. Please log in and submit your predictions as soon as possible. Sorry for the inconvenience!</p>
+    </div>
+  </div>
+  <button onclick="document.getElementById('dataBanner').style.display='none'" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#92400e;padding:4px 8px;border-radius:4px;flex-shrink:0" title="Dismiss">✕</button>
+</div>
+
 <div class="config-bar">
   <div><label>&#128100; Select A Player</label><select id="userSelect" onchange="selectUser()" style="width:200px"><option value="">&#8212; Select Player &#8212;</option></select></div>
   <button class="btn btn-danger btn-sm" id="logoutBtn" onclick="logout()" style="display:none">&#128275; Switch Player</button>

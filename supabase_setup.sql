@@ -1,18 +1,13 @@
 -- ============================================================
---  FIFA 2026 Prediction App — Supabase Database Setup
---  Run this entire script in: Supabase Dashboard → SQL Editor
+--  FIFA 2026 Prediction App — Fix predictions table
+--  participants & actual_scores are intact — DO NOT touch them
+--  Run in: Supabase Dashboard → SQL Editor
 -- ============================================================
 
--- ── 1. PARTICIPANTS ──────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS participants (
-  id          BIGSERIAL PRIMARY KEY,
-  name        TEXT NOT NULL UNIQUE,
-  email       TEXT,
-  created_at  TIMESTAMPTZ DEFAULT NOW()
-);
+-- ── Drop and recreate predictions with correct schema ────────
+DROP TABLE IF EXISTS predictions CASCADE;
 
--- ── 2. PREDICTIONS ───────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS predictions (
+CREATE TABLE predictions (
   id           BIGSERIAL PRIMARY KEY,
   player_name  TEXT NOT NULL,
   match_id     INTEGER NOT NULL,
@@ -23,15 +18,7 @@ CREATE TABLE IF NOT EXISTS predictions (
   UNIQUE (player_name, match_id)
 );
 
--- ── 3. ACTUAL SCORES ─────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS actual_scores (
-  match_id    INTEGER PRIMARY KEY,
-  score1      INTEGER NOT NULL CHECK (score1 >= 0),
-  score2      INTEGER NOT NULL CHECK (score2 >= 0),
-  updated_at  TIMESTAMPTZ DEFAULT NOW()
-);
-
--- ── 4. AUTO-UPDATE updated_at TRIGGER ────────────────────────
+-- ── Auto-update trigger ───────────────────────────────────────
 CREATE OR REPLACE FUNCTION update_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -40,52 +27,25 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS predictions_updated_at ON predictions;
 CREATE TRIGGER predictions_updated_at
   BEFORE UPDATE ON predictions
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
-CREATE TRIGGER actual_scores_updated_at
-  BEFORE UPDATE ON actual_scores
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+-- ── Row Level Security ────────────────────────────────────────
+ALTER TABLE predictions ENABLE ROW LEVEL SECURITY;
 
--- ── 5. ENABLE ROW LEVEL SECURITY ─────────────────────────────
-ALTER TABLE participants  ENABLE ROW LEVEL SECURITY;
-ALTER TABLE predictions   ENABLE ROW LEVEL SECURITY;
-ALTER TABLE actual_scores ENABLE ROW LEVEL SECURITY;
-
--- ── 6. RLS POLICIES — participants ───────────────────────────
-CREATE POLICY "Public can read participants"
-  ON participants FOR SELECT USING (true);
-
-CREATE POLICY "Public can add participants"
-  ON participants FOR INSERT WITH CHECK (true);
-
--- ── 7. RLS POLICIES — predictions ────────────────────────────
-CREATE POLICY "Public can read predictions"
-  ON predictions FOR SELECT USING (true);
-
-CREATE POLICY "Public can insert predictions"
-  ON predictions FOR INSERT WITH CHECK (true);
-
-CREATE POLICY "Public can update own predictions"
-  ON predictions FOR UPDATE USING (true);
-
--- ── 8. RLS POLICIES — actual_scores ──────────────────────────
-CREATE POLICY "Public can read actual scores"
-  ON actual_scores FOR SELECT USING (true);
-
-CREATE POLICY "Public can insert actual scores"
-  ON actual_scores FOR INSERT WITH CHECK (true);
-
-CREATE POLICY "Public can update actual scores"
-  ON actual_scores FOR UPDATE USING (true);
-
--- ── 9. SEED: Add first participant (Saju) ────────────────────
-INSERT INTO participants (name, email)
-VALUES ('Saju', 'zajuzam@outlook.com')
-ON CONFLICT (name) DO NOTHING;
+DO $$ BEGIN
+  CREATE POLICY "Public can read predictions"       ON predictions FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY "Public can insert predictions"     ON predictions FOR INSERT WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY "Public can update own predictions" ON predictions FOR UPDATE USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ── DONE ─────────────────────────────────────────────────────
--- Your tables are ready. Open the website and all saves will
--- go to Supabase instead of (just) the browser cache.
+-- predictions table is fixed. Players can now log in and
+-- re-enter their predictions. participants & actual_scores untouched.
 -- ============================================================
