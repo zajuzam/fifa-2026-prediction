@@ -587,7 +587,7 @@ function init() {
 async function loadParticipants() {
   if (!db) { populateUserSelect(); return; }
   try {
-    const {data, error} = await db.from('participants').select('name, pin, is_admin').order('id');
+    const {data, error} = await db.from('participants').select('name, pin, is_admin, carryover_points, carryover_exact, carryover_correct, carryover_predictions').order('id');
     if (error) throw error;
     if (data && data.length) {
       participants    = data.map(p => p.name);
@@ -1131,7 +1131,13 @@ function renderLeaderboard() {
       predCount++; const pts=calcPoints(pred.s1,pred.s2,sc.s1,sc.s2); total+=pts;
       if (pts===3) exact++; else if (pts===1) correct++;
     });
-    return {name,total,exact,correct,predCount};
+    // Add carryover points from before the data loss
+    const pd = participantData.find(p => p.name === name);
+    const co_pts   = pd ? (pd.carryover_points      || 0) : 0;
+    const co_exact = pd ? (pd.carryover_exact        || 0) : 0;
+    const co_corr  = pd ? (pd.carryover_correct      || 0) : 0;
+    const co_preds = pd ? (pd.carryover_predictions  || 0) : 0;
+    return {name, total:total+co_pts, exact:exact+co_exact, correct:correct+co_corr, predCount:predCount+co_preds};
   }).sort((a,b) => b.total-a.total||b.exact-a.exact);
 
   const medals=['\u{1F947}','\u{1F948}','\u{1F949}'];
