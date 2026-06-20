@@ -593,7 +593,7 @@ function init() {
 async function loadParticipants() {
   if (!db) { populateUserSelect(); return; }
   try {
-    const {data, error} = await db.from('participants').select('name, pin, is_admin, carryover_points, carryover_exact, carryover_correct, carryover_predictions').order('id');
+    const {data, error} = await db.from('participants').select('name, pin, is_admin, carryover_points, carryover_exact, carryover_correct, carryover_predictions, country').order('id');
     if (error) throw error;
     if (data && data.length) {
       participants    = data.map(p => p.name);
@@ -1161,6 +1161,39 @@ async function saveAllPredictions() {
 }
 
 // ── LEADERBOARD ───────────────────────────────────────────────
+function countryToFlag(country) {
+  if (!country) return '';
+  const nameToCode = {
+    'Afghanistan':'af','Albania':'al','Algeria':'dz','Angola':'ao','Argentina':'ar',
+    'Armenia':'am','Australia':'au','Austria':'at','Azerbaijan':'az','Bahrain':'bh',
+    'Bangladesh':'bd','Belgium':'be','Bolivia':'bo','Bosnia and Herzegovina':'ba',
+    'Bosnia & Herz.':'ba','Brazil':'br','Bulgaria':'bg','Cameroon':'cm','Canada':'ca',
+    'Chile':'cl','China':'cn','Colombia':'co','Costa Rica':'cr','Croatia':'hr',
+    'Czechia':'cz','Czech Republic':'cz','Denmark':'dk','Ecuador':'ec','Egypt':'eg',
+    'El Salvador':'sv','Estonia':'ee','Ethiopia':'et','Finland':'fi','France':'fr',
+    'Germany':'de','Ghana':'gh','Greece':'gr','Honduras':'hn','Hong Kong':'hk',
+    'Hungary':'hu','Iceland':'is','India':'in','Indonesia':'id','Iran':'ir','Iraq':'iq',
+    'Ireland':'ie','Israel':'il','Italy':'it','Jamaica':'jm','Japan':'jp','Jordan':'jo',
+    'Kazakhstan':'kz','Kenya':'ke','Kuwait':'kw','Latvia':'lv','Lebanon':'lb',
+    'Lithuania':'lt','Malaysia':'my','Mexico':'mx','Morocco':'ma','Netherlands':'nl',
+    'New Zealand':'nz','Nigeria':'ng','Norway':'no','Oman':'om','Pakistan':'pk',
+    'Panama':'pa','Paraguay':'py','Peru':'pe','Philippines':'ph','Poland':'pl',
+    'Portugal':'pt','Qatar':'qa','Romania':'ro','Russia':'ru','Saudi Arabia':'sa',
+    'Senegal':'sn','Serbia':'rs','Singapore':'sg','Slovakia':'sk','Slovenia':'si',
+    'South Africa':'za','South Korea':'kr','Spain':'es','Sri Lanka':'lk','Sweden':'se',
+    'Switzerland':'ch','Syria':'sy','Taiwan':'tw','Thailand':'th','Tunisia':'tn',
+    'Turkey':'tr','Turkiye':'tr','Ukraine':'ua','United Arab Emirates':'ae','UAE':'ae',
+    'United Kingdom':'gb','UK':'gb','England':'gb','Scotland':'gb','Wales':'gb',
+    'United States':'us','USA':'us','Uruguay':'uy','Uzbekistan':'uz',
+    'Venezuela':'ve','Vietnam':'vn','Yemen':'ye','Zimbabwe':'zw'
+  };
+  const t = country.trim();
+  // Handle both full names and raw 2-letter ISO codes
+  const code = t.length === 2 ? t.toLowerCase() : nameToCode[t];
+  if (!code) return '';
+  return '<img src="https://flagcdn.com/20x15/'+code+'.png" alt="'+t+'" title="'+t+'" style="vertical-align:middle;margin-right:5px;border-radius:2px;display:inline-block">';
+}
+
 function renderLeaderboard() {
   const rows = participants.map(name => {
     const preds=predictions[name]||{}; let total=0,exact=0,correct=0,predCount=0;
@@ -1175,14 +1208,15 @@ function renderLeaderboard() {
     const co_exact = pd ? (pd.carryover_exact        || 0) : 0;
     const co_corr  = pd ? (pd.carryover_correct      || 0) : 0;
     const co_preds = pd ? (pd.carryover_predictions  || 0) : 0;
-    return {name, total:total+co_pts, exact:exact+co_exact, correct:correct+co_corr, predCount:predCount+co_preds};
+    const country = pd ? (pd.country || '') : '';
+    return {name, total:total+co_pts, exact:exact+co_exact, correct:correct+co_corr, predCount:predCount+co_preds, country};
   }).sort((a,b) => b.total-a.total||b.exact-a.exact);
 
   const medals=['\u{1F947}','\u{1F948}','\u{1F949}'];
   document.getElementById('lbBody').innerHTML = rows.map((r,i) =>
     '<tr class="'+(i<3?'rank-'+(i+1):'')+'">'+
     '<td style="text-align:center">'+(medals[i]||i+1)+'</td>'+
-    '<td><strong>'+r.name+'</strong></td>'+
+    '<td><strong>'+(r.country?countryToFlag(r.country)+' ':'')+r.name+'</strong></td>'+
     '<td style="text-align:center">'+r.predCount+'</td>'+
     '<td style="text-align:center;color:var(--green)">'+r.exact+'</td>'+
     '<td style="text-align:center;color:var(--orange)">'+r.correct+'</td>'+
