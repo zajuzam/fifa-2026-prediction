@@ -238,7 +238,7 @@
   </div>
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px">
     <div class="filter-row" style="margin-bottom:0">
-      <select id="predStageFilter" onchange="renderPredictions()" style="font-weight:700;color:var(--navy)">
+      <select id="predStageFilter" onchange="predDateFilter='';renderPredictions()" style="font-weight:700;color:var(--navy)">
         <option value="Group Stage">&#128193; Group Stage</option>
         <option value="Knockout">&#9889; Knockout Rounds</option>
       </select>
@@ -251,6 +251,10 @@
       <label style="font-size:.82rem;color:var(--gray);align-self:center"><input type="checkbox" id="showUnpredicted" onchange="renderPredictions()"> Show only unpredicted</label>
     </div>
     <button class="btn btn-success" onclick="saveAllPredictions()">&#128190; Save All Predictions</button>
+  </div>
+  <div id="predDateRow" style="margin-bottom:12px;display:none;align-items:center;flex-wrap:wrap;gap:6px">
+    <span style="font-size:.8rem;color:var(--gray);font-weight:600;white-space:nowrap">&#128197; Date:</span>
+    <div id="predDateBtns" style="display:flex;flex-wrap:wrap;gap:5px"></div>
   </div>
   <div id="saveConfirm" style="display:none;text-align:center;padding:12px;margin-bottom:12px;background:#dcfce7;color:#166534;border-radius:8px;font-weight:700;font-size:1rem;border-left:4px solid #22c55e"></div>
   <div id="predictContainer"></div>
@@ -539,6 +543,7 @@ let knockoutTeams   = JSON.parse(localStorage.getItem('fifa_knockout_teams')   |
 let currentUser     = localStorage.getItem('fifa_user') || '';
 let currentUserTemp = '';
 let pinVerified     = !!localStorage.getItem('fifa_user'); // restored from session
+let predDateFilter  = ''; // '' = all dates; set to today when predict tab opens
 let adminUnlocked   = false;
 
 // ── INIT ──────────────────────────────────────────────────────
@@ -725,7 +730,11 @@ function showPage(p) {
   document.getElementById('page-'+p).classList.add('active');
   const map = {groups:0,matches:1,todaysmatch:2,predict:3,leaderboard:4,admin:5,contact:6};
   document.querySelectorAll('.tab')[map[p]].classList.add('active');
-  if (p==='predict') renderPredictions();
+  if (p==='predict') {
+    const _tn = new Date(), _ts = _tn.getFullYear()+'-'+String(_tn.getMonth()+1).padStart(2,'0')+'-'+String(_tn.getDate()).padStart(2,'0');
+    if (matches.some(m => m.stage==='Group Stage' && m.date===_ts)) predDateFilter = _ts;
+    renderPredictions();
+  }
   if (p==='leaderboard') renderLeaderboard();
   if (p==='admin' && adminUnlocked) renderAdminScores();
   if (p==='groups') renderGroups();
@@ -1038,11 +1047,31 @@ function renderMatches() {
 }
 
 // ── PREDICTIONS PAGE ──────────────────────────────────────────
+function renderPredDateButtons() {
+  const isKnockout = document.getElementById('predStageFilter').value === 'Knockout';
+  const row = document.getElementById('predDateRow');
+  if (isKnockout) { row.style.display = 'none'; return; }
+  row.style.display = 'flex';
+  const now = new Date();
+  const todayStr = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  const dates = [...new Set(matches.filter(m=>m.stage==='Group Stage').map(m=>m.date))].sort();
+  let btns = '<button onclick="setPredDate(\'\')" style="padding:5px 13px;border-radius:999px;border:1px solid var(--border);cursor:pointer;font-size:.78rem;font-weight:700;background:'+(predDateFilter===''?'var(--navy)':'#fff')+';color:'+(predDateFilter===''?'#fff':'var(--navy)')+'">All</button>';
+  dates.forEach(d => {
+    const sel = predDateFilter === d;
+    const isToday = d === todayStr;
+    const lbl = new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    btns += '<button onclick="setPredDate(\''+d+'\')" style="padding:5px 13px;border-radius:999px;border:2px solid '+(isToday?'var(--gold)':'var(--border)')+';cursor:pointer;font-size:.78rem;font-weight:700;background:'+(sel?'var(--navy)':'#fff')+';color:'+(sel?'#fff':'var(--navy)')+';">'+(isToday?'⚡ ':'')+lbl+'</button>';
+  });
+  document.getElementById('predDateBtns').innerHTML = btns;
+}
+function setPredDate(d) { predDateFilter = d; renderPredDateButtons(); renderPredictions(); }
+
 function renderPredictions() {
   if (!currentUser || !pinVerified) {
     document.getElementById('predictContainer').innerHTML=
       '<div class="alert alert-warn" style="text-align:center;padding:24px">'+
       '&#128274; Select your name above and enter your PIN to view your predictions.</div>';
+    renderPredDateButtons();
     return;
   }
   const predStage  = document.getElementById('predStageFilter').value;
@@ -1052,11 +1081,13 @@ function renderPredictions() {
   const knockoutStages = ['Round of 32','Round of 16','Quarterfinal','Semifinal','Bronze Medal','Final'];
   // Hide group filter when viewing knockout
   document.getElementById('predGroupFilter').style.display = isKnockout ? 'none' : '';
+  renderPredDateButtons();
   const userPreds = predictions[currentUser] || {};
   const list = matches.filter(m => {
     if (isKnockout) return knockoutStages.includes(m.stage);
     if (m.stage !== 'Group Stage') return false;
     if (grp && m.group !== grp) return false;
+    if (predDateFilter && m.date !== predDateFilter) return false;
     if (onlyUnpred && userPreds[m.id]) return false;
     return true;
   });
@@ -1199,115 +1230,4 @@ function renderAdminScores() {
     if (!isKnockout) {
       if (m.group !== lastStage) {} // handled above
       html += '<div class="match-card">'+
-        '<div class="match-team">'+(FLAGS[t1]||'\u{1F3F3}️')+' <span>'+t1+'</span></div>'+
-        '<div class="match-center"><div class="pred-inputs">'+
-        '<input type="number" min="0" max="20" id="admin_'+m.id+'_s1" value="'+(sc.s1!==undefined?sc.s1:'')+'" placeholder="–">'+
-        '<span class="dash">:</span>'+
-        '<input type="number" min="0" max="20" id="admin_'+m.id+'_s2" value="'+(sc.s2!==undefined?sc.s2:'')+'" placeholder="–">'+
-        '</div><div class="match-meta" style="margin-top:6px">'+fmtDate(m.date)+' · '+m.time+'</div>'+
-        '<div class="match-meta">\u{1F4CD} '+m.venue+'</div>'+
-        (sc.s1!==undefined?'<span class="chip chip-done" style="margin-top:4px">✓ Score entered</span>':'<span class="chip chip-upcoming" style="margin-top:4px">Upcoming</span>')+
-        '</div><div class="match-team right"><span>'+t2+'</span> '+(FLAGS[t2]||'\u{1F3F3}️')+'</div></div>';
-    } else {
-      // Knockout: editable team names + scores
-      html += '<div class="match-card" style="flex-direction:column;display:block;padding:16px">'+
-        '<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center">'+
-        '<div><label style="font-size:.7rem;color:var(--gray);display:block;margin-bottom:2px">Team 1</label>'+
-        '<input type="text" id="ko_'+m.id+'_t1" value="'+t1+'" placeholder="TBD" style="width:100%;padding:6px 8px;border:2px solid var(--border);border-radius:6px;font-weight:700"></div>'+
-        '<div class="match-center">'+
-        '<div class="pred-inputs" style="justify-content:center">'+
-        '<input type="number" min="0" max="20" id="admin_'+m.id+'_s1" value="'+(sc.s1!==undefined?sc.s1:'')+'" placeholder="–">'+
-        '<span class="dash">:</span>'+
-        '<input type="number" min="0" max="20" id="admin_'+m.id+'_s2" value="'+(sc.s2!==undefined?sc.s2:'')+'" placeholder="–">'+
-        '</div><div class="match-meta" style="margin-top:4px">'+fmtDate(m.date)+' · '+m.time+'</div>'+
-        (sc.s1!==undefined?'<span class="chip chip-done" style="margin-top:4px">✓ Score entered</span>':'<span class="chip chip-upcoming" style="margin-top:4px">Upcoming</span>')+
-        '</div>'+
-        '<div><label style="font-size:.7rem;color:var(--gray);display:block;margin-bottom:2px;text-align:right">Team 2</label>'+
-        '<input type="text" id="ko_'+m.id+'_t2" value="'+t2+'" placeholder="TBD" style="width:100%;padding:6px 8px;border:2px solid var(--border);border-radius:6px;font-weight:700;text-align:right">'+
-        '</div></div></div>';
-    }
-  });
-  document.getElementById('adminContainer').innerHTML = html || '<p style="color:var(--gray);text-align:center;padding:40px">No matches found.</p>';
-}
-
-async function saveAdminScores() {
-  const isKnockout = document.getElementById('adminStageFilter').value === 'Knockout';
-  const knockoutStages = ['Round of 32','Round of 16','Quarterfinal','Semifinal','Bronze Medal','Final'];
-  const rows = [];
-  const stageMatches = isKnockout
-    ? matches.filter(m => knockoutStages.includes(m.stage))
-    : matches.filter(m => m.stage === 'Group Stage');
-
-  stageMatches.forEach(m => {
-    const s1el = document.getElementById('admin_'+m.id+'_s1');
-    const s2el = document.getElementById('admin_'+m.id+'_s2');
-    if (!s1el || !s2el) return;
-    if (s1el.value !== '' && s2el.value !== '') {
-      actualScores[m.id] = {s1:parseInt(s1el.value), s2:parseInt(s2el.value)};
-      rows.push({match_id:m.id, score1:parseInt(s1el.value), score2:parseInt(s2el.value), updated_at:new Date().toISOString()});
-    } else { delete actualScores[m.id]; }
-    // Save knockout team name overrides
-    if (isKnockout) {
-      const t1el = document.getElementById('ko_'+m.id+'_t1');
-      const t2el = document.getElementById('ko_'+m.id+'_t2');
-      if (t1el && t2el) {
-        knockoutTeams[m.id] = {team1: t1el.value.trim()||'TBD', team2: t2el.value.trim()||'TBD'};
-      }
-    }
-  });
-  localStorage.setItem('fifa_actual', JSON.stringify(actualScores));
-  localStorage.setItem('fifa_knockout_teams', JSON.stringify(knockoutTeams));
-  if (rows.length) {
-    if (db) {
-      toast('Saving to Supabase…');
-      const {error} = await db.from('actual_scores').upsert(rows, {onConflict:'match_id'});
-      toast(error ? '⚠️ Saved locally: '+error.message : '✅ '+rows.length+' score(s) saved to Supabase!');
-    } else { toast('✅ '+rows.length+' score(s) saved locally.'); }
-  } else { toast('✅ Knockout teams saved!'); }
-  renderGroups(); renderLeaderboard(); renderAdminScores();
-}
-
-async function resetAllData() {
-  if (!confirm('Reset ALL predictions and scores? This cannot be undone.')) return;
-  predictions={}; actualScores={};
-  localStorage.removeItem('fifa_predictions'); localStorage.removeItem('fifa_actual');
-  if (db) { await db.from('predictions').delete().neq('id',0); await db.from('actual_scores').delete().neq('match_id',0); }
-  toast('All data reset.'); renderAll();
-}
-
-// ── HELPERS ───────────────────────────────────────────────────
-function calcPoints(ps1,ps2,as1,as2) {
-  ps1=parseInt(ps1);ps2=parseInt(ps2);as1=parseInt(as1);as2=parseInt(as2);
-  if (ps1===as1&&ps2===as2) return 3;
-  const pr=ps1>ps2?'W':ps1<ps2?'L':'D', ar=as1>as2?'W':as1<as2?'L':'D';
-  return pr===ar?1:0;
-}
-function fmtDate(d) {
-  if (!d) return '';
-  return new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',weekday:'short'});
-}
-function renderAll() { renderGroups(); renderMatches(); renderTodayMatches(); renderPredictions(); renderLeaderboard(); if (adminUnlocked) renderAdminScores(); }
-function showSaveConfirm(msg, dur=3000) {
-  const el = document.getElementById('saveConfirm');
-  if (!el) { toast(msg); return; }
-  el.textContent = msg; el.style.display = 'block';
-  clearTimeout(el._t); el._t = setTimeout(() => el.style.display='none', dur);
-}
-function toast(msg,dur=2500) { const el=document.getElementById('toast'); el.textContent=msg; el.style.display='block'; clearTimeout(el._t); el._t=setTimeout(()=>el.style.display='none',dur); }
-function openModal(id)  { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('open'); }));
-
-init();
-</script>
-<script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then(reg => console.log('SW registered:', reg.scope))
-      .catch(err => console.warn('SW registration failed:', err));
-  });
-}
-</script>
-</body>
-</html>
+        '<div class="match-team"
