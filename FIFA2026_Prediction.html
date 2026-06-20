@@ -917,7 +917,15 @@ function renderTodayMatches() {
   const todayStr = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
   document.getElementById('todayDateLabel').textContent = now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
 
-  const todayMatches = matches.filter(m => m.date === todayStr);
+  const parseET = t => {
+    const x = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
+    if (!x) return 0;
+    let h = parseInt(x[1]), min = parseInt(x[2]), p = x[3].toUpperCase();
+    if (p === 'AM' && h === 12) h = 0;
+    if (p === 'PM' && h !== 12) h += 12;
+    return h * 60 + min;
+  };
+  const todayMatches = matches.filter(m => m.date === todayStr).sort((a,b) => parseET(a.time) - parseET(b.time));
   const container = document.getElementById('todayMatchesContainer');
 
   if (todayMatches.length === 0) {
