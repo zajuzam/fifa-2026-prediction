@@ -162,6 +162,42 @@
   .share-copy{background:var(--light);color:var(--navy);border:1px solid var(--border)}.share-copy:hover{background:var(--border)}
   .join-btn{background:var(--gold);color:var(--navy);padding:8px 20px;border-radius:8px;border:none;cursor:pointer;font-weight:800;font-size:.9rem;margin-left:auto;transition:all .15s}
   .join-btn:hover{filter:brightness(.92)}
+  /* ── STANDINGS / BRACKET ── */
+  #page-standings{background:#0c1935;margin:-24px;padding:16px 14px 32px;min-height:calc(100vh - 100px)}
+  .st-tabs{background:#172848;border-radius:10px;padding:5px;margin-bottom:14px;display:flex;gap:3px}
+  .sttab{flex:1;padding:9px 4px;border:none;background:transparent;color:rgba(255,255,255,.4);font-weight:800;font-size:.8rem;cursor:pointer;border-radius:7px;transition:all .2s;letter-spacing:.5px}
+  .sttab.active{background:#fff;color:#0c1935;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+  .sttab:hover:not(.active){color:#fff;background:rgba(255,255,255,.1)}
+  /* two-col GS layout */
+  .st-two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}
+  @media(max-width:700px){.st-two-col{grid-template-columns:1fr}}
+  /* dark group card */
+  .dgc{background:#152444;border-radius:10px;overflow:hidden;margin-bottom:8px}
+  .dgc-hdr{padding:8px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,.06)}
+  .dgc-hdr .gname{color:#fff;font-size:.82rem;font-weight:800;letter-spacing:.3px}
+  .dgc-hdr .gpts-lbl{font-size:.7rem;color:rgba(255,255,255,.4);font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+  .dgc-row{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.04)}
+  .dgc-row:last-child{border-bottom:none}
+  .dgc-rank{width:14px;font-size:.75rem;color:rgba(255,255,255,.35);font-weight:700;flex-shrink:0;text-align:center}
+  .dgc-flag{width:26px;height:19px;object-fit:cover;border-radius:2px;flex-shrink:0}
+  .dgc-name{flex:1;font-size:.83rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dgc-name.dim{color:rgba(255,255,255,.45);font-weight:400}
+  .dgc-pts{font-size:.9rem;font-weight:800;color:#D4AF37;min-width:18px;text-align:right}
+  .dgc-pts.dim{color:rgba(255,255,255,.3);font-weight:500}
+  /* dark bracket card */
+  .dbc{background:#152444;border-radius:10px;overflow:hidden;margin-bottom:8px}
+  .dbc-date{padding:8px 14px;font-size:.72rem;color:rgba(255,255,255,.55);font-weight:700;letter-spacing:.3px;border-bottom:1px solid rgba(255,255,255,.06)}
+  .dbc-slot{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.04)}
+  .dbc-slot:last-of-type{border-bottom:none}
+  .dbc-bullet{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.1);flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .dbc-bullet img{width:26px;height:20px;object-fit:cover}
+  .dbc-label{font-size:.85rem;color:rgba(255,255,255,.45);font-weight:500;flex:1}
+  .dbc-label.real{color:#fff;font-weight:700}
+  .dbc-score{font-size:.9rem;font-weight:800;color:#D4AF37}
+  .dbc-score.win{color:#4ade80}
+  .dbc-foot{padding:5px 14px 8px;font-size:.7rem;color:rgba(255,255,255,.3);display:flex;justify-content:space-between}
+  /* bracket grid for R32/R16/QF/SF/F */
+  .dark-bracket-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
 </style>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#ffffff">
@@ -204,6 +240,7 @@
     <div class="tab" onclick="showPage('predict')">&#9999;&#65039; Predictions</div>
     <div class="tab" onclick="showPage('leaderboard')">&#127885; Leaderboard</div>
     <div class="tab" id="adminTab" onclick="showPage('admin')" style="display:none">&#9881;&#65039; Admin</div>
+    <div class="tab" onclick="showPage('standings')">&#127942; Standings</div>
     <div class="tab" onclick="showPage('contact')">&#9993;&#65039; Contact</div>
     <div class="tab" onclick="window.open('how-to-play.html','_blank')">&#10067; How to Play</div>
   </div>
@@ -316,6 +353,18 @@
       <p style="margin-top:24px;font-size:.8rem;color:var(--gray)">We'll get back to you as soon as possible.</p>
     </div>
   </div>
+</div>
+
+<div class="page" id="page-standings">
+  <div class="st-tabs" id="stTabs">
+    <button class="sttab active" onclick="setStandingsStage('GS')">GS</button>
+    <button class="sttab" onclick="setStandingsStage('R32')">R32</button>
+    <button class="sttab" onclick="setStandingsStage('R16')">R16</button>
+    <button class="sttab" onclick="setStandingsStage('QF')">QF</button>
+    <button class="sttab" onclick="setStandingsStage('SF')">SF</button>
+    <button class="sttab" onclick="setStandingsStage('F')">Final</button>
+  </div>
+  <div id="standingsContent"></div>
 </div>
 
 <div class="page" id="page-admin">
@@ -777,8 +826,9 @@ function showPage(p) {
   document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
   document.getElementById('page-'+p).classList.add('active');
-  const map = {groups:0,matches:1,todaysmatch:2,predict:3,leaderboard:4,admin:5,contact:6};
+  const map = {groups:0,matches:1,todaysmatch:2,predict:3,leaderboard:4,standings:5,admin:6,contact:7};
   document.querySelectorAll('.tab')[map[p]].classList.add('active');
+  if (p==='standings') renderStandings();
   if (p==='predict') {
     const _n=new Date(), _ts=_n.getFullYear()+'-'+String(_n.getMonth()+1).padStart(2,'0')+'-'+String(_n.getDate()).padStart(2,'0');
     if (matches.some(m=>m.stage==='Group Stage'&&m.date===_ts)) predDateFilter=_ts;
@@ -1138,10 +1188,12 @@ function renderPredictions() {
       return;
     }
   }
+  // Sort by date then by kick-off time (EST)
+  const parseET=t=>{const x=t.match(/(\d+):(\d+)\s*(AM|PM)/i);if(!x)return 0;let h=parseInt(x[1]),mn=parseInt(x[2]);if(x[3].toUpperCase()==='PM'&&h!==12)h+=12;if(x[3].toUpperCase()==='AM'&&h===12)h=0;return h*60+mn;};
+  list.sort((a,b)=>a.date.localeCompare(b.date)||parseET(a.time)-parseET(b.time));
   let html='<div class="pred-dark-wrap"><div class="pred-dark-card">', lastGrp='';
   list.forEach(m => {
     const t1 = getTeam(m,'team1'), t2 = getTeam(m,'team2');
-    if(!isKnockout&&m.group!==lastGrp){html+='<div class="pred-dark-grp-hdr">Group '+m.group+'</div>';lastGrp=m.group;}
     if(isKnockout&&m.stage!==lastGrp){html+='<div class="pred-dark-grp-hdr">⚡ '+m.stage+'</div>';lastGrp=m.stage;}
     const sc=actualScores[m.id], pred=userPreds[m.id]||{};
     // Lock predictions once the match has kicked off (all matches are EDT = UTC-4)
@@ -1173,7 +1225,7 @@ function renderPredictions() {
         '<div class="pred-dark-team right"><span>'+t2+'</span>'+teamFlagImg(t2)+'</div>'+
       '</div>'+
       '<div class="dm-meta">'+
-        '<span class="pred-dark-info">'+fmtDate(m.date)+' · '+m.time+
+        '<span class="pred-dark-info">'+fmtDate(m.date)+' · '+m.time+(m.group!=='-'?' · <span style="color:#D4AF37;font-weight:700">Group '+m.group+'</span>':'')+
           (sc!==undefined?' · <span class="pred-dark-actual">Actual: '+sc.s1+'-'+sc.s2+'</span>':'')+
           (isLocked?' <span class="pred-dark-lock">🔒 Locked</span>':'')+
         '</span>'+
@@ -1373,7 +1425,109 @@ function fmtDate(d) {
   if (!d) return '';
   return new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',weekday:'short'});
 }
-function renderAll() { renderGroups(); renderMatches(); renderTodayMatches(); renderPredictions(); renderLeaderboard(); if (adminUnlocked) renderAdminScores(); }
+// ── STANDINGS / BRACKET PAGE ──────────────────────────────────
+let standingsStage = 'GS';
+
+function setStandingsStage(stage) {
+  standingsStage = stage;
+  ['GS','R32','R16','QF','SF','F'].forEach((s,i) => {
+    document.querySelectorAll('#stTabs .sttab')[i].classList.toggle('active', s === stage);
+  });
+  renderStandings();
+}
+
+function renderStandings() {
+  const el = document.getElementById('standingsContent');
+  if (!el) return;
+  el.innerHTML = standingsStage === 'GS' ? renderStandingsGS() : renderBracketMatches(standingsStage);
+}
+
+function _buildGroupStats(g, teams) {
+  const stats = {};
+  teams.forEach(t => { stats[t] = {p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0}; });
+  matches.filter(m => m.group===g && actualScores[m.id]!==undefined).forEach(m => {
+    const sc=actualScores[m.id], t1=m.team1, t2=m.team2, s1=sc.s1, s2=sc.s2;
+    if (!stats[t1]||!stats[t2]) return;
+    stats[t1].p++; stats[t2].p++; stats[t1].gf+=s1; stats[t1].ga+=s2; stats[t2].gf+=s2; stats[t2].ga+=s1;
+    if (s1>s2){stats[t1].w++;stats[t1].pts+=3;stats[t2].l++;}
+    else if (s1<s2){stats[t2].w++;stats[t2].pts+=3;stats[t1].l++;}
+    else{stats[t1].d++;stats[t1].pts++;stats[t2].d++;stats[t2].pts++;}
+  });
+  return Object.entries(stats).sort((a,b) => b[1].pts-a[1].pts||(b[1].gf-b[1].ga)-(a[1].gf-a[1].ga));
+}
+
+function _darkGroupCard(g, teams) {
+  const sorted = _buildGroupStats(g, teams);
+  const rows = sorted.map(([t,s],i) => {
+    const q = i < 2;
+    const code = TEAM_CODES[t];
+    const fi = code ? '<img class="dgc-flag" src="https://flagcdn.com/32x24/'+code+'.png" alt="'+t+'">' : '<span style="font-size:1rem">'+(FLAGS[t]||'🏳️')+'</span>';
+    return '<div class="dgc-row">'+
+      '<span class="dgc-rank">'+(i+1)+'</span>'+fi+
+      '<span class="dgc-name'+(q?'':' dim')+'">'+t+'</span>'+
+      '<span class="dgc-pts'+(q?'':' dim')+'">'+s.pts+'</span>'+
+    '</div>';
+  }).join('');
+  return '<div class="dgc">'+
+    '<div class="dgc-hdr"><span class="gname">Group '+g+'</span><span class="gpts-lbl">PTS</span></div>'+
+    rows+'</div>';
+}
+
+function _darkBracketCard(m) {
+  const sc = actualScores[m.id];
+  const kt = knockoutTeams[m.id] || {};
+  const t1 = kt.team1 || m.team1;
+  const t2 = kt.team2 || m.team2;
+  const isTBD1 = !t1 || t1==='TBD';
+  const isTBD2 = !t2 || t2==='TBD';
+  const hasScore = sc !== undefined;
+  const w1 = hasScore && sc.s1 > sc.s2;
+  const w2 = hasScore && sc.s2 > sc.s1;
+  const dateStr = new Date(m.date+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  const vi = VENUE_INFO[m.venue] || {city:'', stadium:m.venue};
+  const venueStr = vi.city ? vi.city+', '+(vi.state||'') : vi.stadium;
+  const isBronze = m.stage === 'Bronze Medal';
+
+  function slot(t, isTBD, score, isWin) {
+    const code = TEAM_CODES[t];
+    const bullet = isTBD
+      ? '<div class="dbc-bullet"></div>'
+      : '<div class="dbc-bullet">'+(code?'<img src="https://flagcdn.com/28x21/'+code+'.png" alt="'+t+'">':'')+'</div>';
+    const lbl = isTBD ? t||'TBD' : t;
+    return '<div class="dbc-slot">'+bullet+
+      '<span class="dbc-label'+(isTBD?'':' real')+'">'+lbl+'</span>'+
+      (hasScore?'<span class="dbc-score'+(isWin?' win':'')+'">'+score+'</span>':'')+
+    '</div>';
+  }
+
+  return '<div class="dbc">'+
+    '<div class="dbc-date">'+(isBronze?'🥉 Bronze &nbsp;·&nbsp; ':'')+dateStr+' &nbsp;·&nbsp; '+m.time+'</div>'+
+    slot(t1,isTBD1,sc&&sc.s1,w1)+
+    slot(t2,isTBD2,sc&&sc.s2,w2)+
+    '<div class="dbc-foot"><span>📍 '+venueStr+'</span><span>#'+m.id+'</span></div>'+
+  '</div>';
+}
+
+function renderStandingsGS() {
+  const leftHTML = Object.entries(GROUPS).map(([g,teams]) => _darkGroupCard(g,teams)).join('');
+  // Right col: upcoming R32 matches
+  const r32 = matches.filter(m => m.stage==='Round of 32');
+  const rightHTML = r32.map(m => _darkBracketCard(m)).join('');
+  return '<div class="st-two-col">'+
+    '<div>'+leftHTML+'</div>'+
+    '<div>'+rightHTML+'</div>'+
+  '</div>';
+}
+
+function renderBracketMatches(stageKey) {
+  const stageMap = {R32:'Round of 32',R16:'Round of 16',QF:'Quarterfinal',SF:'Semifinal',F:'Final'};
+  let stageMatches = matches.filter(m => m.stage === stageMap[stageKey]);
+  if (stageKey === 'F') stageMatches = matches.filter(m => m.stage==='Final'||m.stage==='Bronze Medal');
+  if (!stageMatches.length) return '<p style="color:rgba(255,255,255,.4);text-align:center;padding:40px">No matches found.</p>';
+  return '<div class="dark-bracket-grid">'+stageMatches.map(m=>_darkBracketCard(m)).join('')+'</div>';
+}
+
+function renderAll() { renderGroups(); renderMatches(); renderTodayMatches(); renderPredictions(); renderLeaderboard(); renderStandings(); if (adminUnlocked) renderAdminScores(); }
 function showSaveConfirm(msg, dur=3000) {
   const el = document.getElementById('saveConfirm');
   if (!el) { toast(msg); return; }

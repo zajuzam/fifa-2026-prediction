@@ -1,0 +1,12 @@
+{
+  "name": "fifa-2026-prediction",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "node run_tests.mjs",
+    "test:watch": "node --watch run_tests.mjs"
+  },
+  "dependencies": {
+    "jsdom": "^25.0.0"
+  }
+}

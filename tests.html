@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>FIFA 2026 Prediction - Test Suite</title>
+<style>
+body{font-family:system-ui,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;background:#f9fafb;color:#111}
+h1{font-size:1.6rem;margin-bottom:4px}
+.subtitle{color:#6b7280;margin-bottom:24px;font-size:.9rem}
+.suite{margin-bottom:28px}
+.suite-title{font-size:1rem;font-weight:700;margin-bottom:10px;padding:8px 12px;background:#1e293b;color:#fff;border-radius:8px}
+.test{display:flex;align-items:flex-start;gap:10px;padding:7px 12px;border-radius:6px;margin-bottom:5px;font-size:.87rem}
+.test.pass{background:#f0fdf4}.test.fail{background:#fef2f2}
+.badge{font-weight:700;font-size:.75rem;padding:2px 8px;border-radius:999px;white-space:nowrap;flex-shrink:0;margin-top:1px}
+.badge.pass{background:#22c55e;color:#fff}.badge.fail{background:#ef4444;color:#fff}
+.test-name{flex:1}
+.test-err{color:#b91c1c;font-size:.8rem;margin-top:2px;font-family:monospace}
+.summary{padding:14px 16px;border-radius:10px;font-weight:700;font-size:1rem;margin-bottom:24px}
+.summary.all-pass{background:#dcfce7;color:#166534}.summary.has-fail{background:#fee2e2;color:#991b1b}
+#hidden-dom{display:none}
+</style>
+</head>
+<body>
+<h1>FIFA 2026 Prediction - Test Suite</h1>
+<p class="subtitle">Covers: TEAM_CODES, teamFlagImg, countryToFlag, fmtDate, isMatchLocked, renderTodayMatches, renderPredictions (sort by time + group label + locking), renderPredDateButtons</p>
+<div id="summary"></div>
+<div id="results"></div>
+<div id="hidden-dom">
+  <div id="todayMatchesContainer"></div>
+  <div id="predictContainer"></div>
+  <select id="predStageFilter"><option value="Group Stage">Group Stage</option><option value="Knockout">Knockout</option></select>
+  <select id="predGroupFilter"><option value="">All</option></select>
+  <div id="predDateRow" style="display:flex"></div>
+  <div id="predDateBtns"></div>
+  <input type="checkbox" id="showUnpredicted">
+</div>
+<script src="tests.js"></script>
+</body>
+</html>
