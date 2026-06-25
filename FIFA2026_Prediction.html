@@ -725,7 +725,8 @@ async function loadFromSupabase() {
     }
     const {data:scores,error:e3} = await db.from('actual_scores').select('*');
     if (e3) throw e3;
-    if (scores && scores.length) {
+    if (scores) {
+      actualScores = {};
       scores.forEach(s => { actualScores[s.match_id] = {s1:s.score1, s2:s.score2}; });
       localStorage.setItem('fifa_actual', JSON.stringify(actualScores));
     }
