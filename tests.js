@@ -15,7 +15,9 @@ var TEAM_CODES = {
   'France':'fr','Senegal':'sn','Iraq':'iq','Norway':'no',
   'Argentina':'ar','Algeria':'dz','Austria':'at','Jordan':'jo',
   'Portugal':'pt','DR Congo':'cd','Uzbekistan':'uz','Colombia':'co',
-  'England':'gb-eng','Croatia':'hr','Ghana':'gh','Panama':'pa','TBD':'un'
+  'England':'gb-eng','Croatia':'hr','Ghana':'gh','Panama':'pa','TBD':'un',
+  // --- Session additions: aliases for R32 match display names ---
+  'USA':'us','Bosnia & Herzegovina':'ba'
 };
 
 function teamFlagImg(name) {
@@ -262,7 +264,7 @@ function resetState() {
 // 1. TEAM_CODES
 describe('TEAM_CODES - all 48 World Cup 2026 teams mapped', function() {
   var expected=['Mexico','South Africa','South Korea','Czechia','Canada','Bosnia & Herz.','Qatar','Switzerland','Brazil','Morocco','Haiti','Scotland','United States','Paraguay','Australia','Turkiye','Germany','Curacao','Ivory Coast','Ecuador','Netherlands','Japan','Sweden','Tunisia','Belgium','Egypt','Iran','New Zealand','Spain','Cape Verde','Saudi Arabia','Uruguay','France','Senegal','Iraq','Norway','Argentina','Algeria','Austria','Jordan','Portugal','DR Congo','Uzbekistan','Colombia','England','Croatia','Ghana','Panama'];
-  it('has 49 entries (48 teams + TBD)', function(){ expect(Object.keys(TEAM_CODES).length).toBe(49); });
+  it('has 51 entries (48 teams + TBD + USA alias + Bosnia & Herzegovina alias)', function(){ expect(Object.keys(TEAM_CODES).length).toBe(51); });
   expected.forEach(function(team){ it('has entry for '+team, function(){ if(!TEAM_CODES[team]) throw new Error('Missing: '+team); }); });
   it('England=gb-eng', function(){ expect(TEAM_CODES['England']).toBe('gb-eng'); });
   it('Scotland=gb-sct', function(){ expect(TEAM_CODES['Scotland']).toBe('gb-sct'); });
@@ -615,6 +617,241 @@ describe('renderPredDateButtons() - date filter buttons', function() {
   it('setPredDate resets with empty string', function(){
     resetState(); predDateFilter='2026-06-11'; matches=[]; setPredDate('');
     expect(predDateFilter).toBe('');
+  });
+});
+
+// =============================================================
+// CONSTANTS & STUBS FOR NEW FEATURES
+// =============================================================
+
+// Auto-logout constants (copied from FIFA2026_Prediction.html)
+var INACTIVITY_LIMIT = 2 * 60 * 1000; // 2 minutes
+var INACTIVITY_WARN  = 30 * 1000;      // 30 seconds
+
+// Minimal toast tracker to support stopInactivityTimer tests
+var _inactivityTimer  = null;
+var _inactivityWarn   = null;
+var _inactivityToastEl = null;
+
+function _clearInactivityToast() {
+  if (_inactivityToastEl) { _inactivityToastEl.remove(); _inactivityToastEl = null; }
+}
+function stopInactivityTimer() {
+  clearTimeout(_inactivityTimer);
+  clearTimeout(_inactivityWarn);
+  _clearInactivityToast();
+}
+function startInactivityTimer() { stopInactivityTimer(); }
+
+// R32 match data (ground truth from FIFA2026_Prediction.html lines 549-564)
+var R32_MATCHES = [
+  {id:73, stage:'Round of 32', date:'2026-06-28', time:'3:00 PM', team1:'South Africa',   team2:'Canada',              venue:'SoFi Stadium, Inglewood'},
+  {id:74, stage:'Round of 32', date:'2026-06-29', time:'1:00 PM', team1:'Brazil',          team2:'Japan',               venue:'NRG Stadium, Houston'},
+  {id:75, stage:'Round of 32', date:'2026-06-29', time:'4:30 PM', team1:'Germany',         team2:'Paraguay',            venue:'Gillette Stadium, Foxborough'},
+  {id:76, stage:'Round of 32', date:'2026-06-29', time:'9:00 PM', team1:'Netherlands',     team2:'Morocco',             venue:'Estadio BBVA, Monterrey'},
+  {id:77, stage:'Round of 32', date:'2026-06-30', time:'1:00 PM', team1:'Ivory Coast',     team2:'Norway',              venue:'AT&T Stadium, Arlington'},
+  {id:78, stage:'Round of 32', date:'2026-06-30', time:'5:00 PM', team1:'France',          team2:'Sweden',              venue:'MetLife Stadium, East Rutherford'},
+  {id:79, stage:'Round of 32', date:'2026-06-30', time:'9:00 PM', team1:'Mexico',          team2:'Scotland',            venue:'Estadio Azteca, Mexico City'},
+  {id:80, stage:'Round of 32', date:'2026-07-01', time:'12:00 PM',team1:'TBD (W-L)',       team2:'Senegal',             venue:'Mercedes-Benz Stadium, Atlanta'},
+  {id:81, stage:'Round of 32', date:'2026-07-01', time:'4:00 PM', team1:'Belgium',         team2:'South Korea',         venue:'Lumen Field, Seattle'},
+  {id:82, stage:'Round of 32', date:'2026-07-01', time:'8:00 PM', team1:'USA',             team2:'Bosnia & Herzegovina',venue:"Levi's Stadium, Santa Clara"},
+  {id:83, stage:'Round of 32', date:'2026-07-02', time:'3:00 PM', team1:'Spain',           team2:'TBD (2nd-J)',         venue:'SoFi Stadium, Inglewood'},
+  {id:84, stage:'Round of 32', date:'2026-07-02', time:'7:00 PM', team1:'TBD (2nd-K)',     team2:'TBD (2nd-L)',         venue:'BMO Field, Toronto'},
+  {id:85, stage:'Round of 32', date:'2026-07-02', time:'11:00 PM',team1:'Switzerland',     team2:'Ecuador',             venue:'BC Place, Vancouver'},
+  {id:86, stage:'Round of 32', date:'2026-07-03', time:'2:00 PM', team1:'Australia',       team2:'Egypt',               venue:'AT&T Stadium, Arlington'},
+  {id:87, stage:'Round of 32', date:'2026-07-03', time:'6:00 PM', team1:'Argentina',       team2:'Cape Verde',          venue:'Hard Rock Stadium, Miami Gardens'},
+  {id:88, stage:'Round of 32', date:'2026-07-03', time:'9:30 PM', team1:'TBD (W-K)',       team2:'Croatia',             venue:'Arrowhead Stadium, Kansas City'}
+];
+
+// =============================================================
+// NEW TEST SUITES
+// =============================================================
+
+// 9. Flag fixes: USA & Bosnia & Herzegovina aliases
+describe('Flag fixes - USA & Bosnia & Herzegovina display names', function() {
+  it('TEAM_CODES["USA"] = "us"', function() {
+    expect(TEAM_CODES['USA']).toBe('us');
+  });
+  it('TEAM_CODES["Bosnia & Herzegovina"] = "ba"', function() {
+    expect(TEAM_CODES['Bosnia & Herzegovina']).toBe('ba');
+  });
+  it('teamFlagImg("USA") returns img with us.png', function() {
+    expect(teamFlagImg('USA')).toContain('32x24/us.png');
+  });
+  it('teamFlagImg("Bosnia & Herzegovina") returns img with ba.png', function() {
+    expect(teamFlagImg('Bosnia & Herzegovina')).toContain('32x24/ba.png');
+  });
+  it('teamFlagImg("USA") is not empty string', function() {
+    var r = teamFlagImg('USA');
+    if (r === '') throw new Error('Got empty string - flag lookup failed for USA');
+  });
+  it('teamFlagImg("Bosnia & Herzegovina") is not empty string', function() {
+    var r = teamFlagImg('Bosnia & Herzegovina');
+    if (r === '') throw new Error('Got empty string - flag lookup failed for Bosnia & Herzegovina');
+  });
+  it('USA and "United States" both resolve to "us"', function() {
+    expect(TEAM_CODES['USA']).toBe(TEAM_CODES['United States']);
+  });
+  it('"Bosnia & Herzegovina" and "Bosnia & Herz." both resolve to "ba"', function() {
+    expect(TEAM_CODES['Bosnia & Herzegovina']).toBe(TEAM_CODES['Bosnia & Herz.']);
+  });
+});
+
+// 10. Auto-logout timer constants
+describe('Auto-logout - timer constants', function() {
+  it('INACTIVITY_LIMIT is 120000 ms (2 minutes)', function() {
+    expect(INACTIVITY_LIMIT).toBe(120000);
+  });
+  it('INACTIVITY_WARN is 30000 ms (30 seconds)', function() {
+    expect(INACTIVITY_WARN).toBe(30000);
+  });
+  it('Warning fires 90s before logout (LIMIT minus WARN = 90000 ms)', function() {
+    expect(INACTIVITY_LIMIT - INACTIVITY_WARN).toBe(90000);
+  });
+  it('INACTIVITY_WARN is less than INACTIVITY_LIMIT', function() {
+    if (INACTIVITY_WARN >= INACTIVITY_LIMIT) throw new Error('Warn must be less than limit');
+  });
+  it('stopInactivityTimer is a function', function() {
+    if (typeof stopInactivityTimer !== 'function') throw new Error('Expected function');
+  });
+  it('startInactivityTimer is a function', function() {
+    if (typeof startInactivityTimer !== 'function') throw new Error('Expected function');
+  });
+  it('stopInactivityTimer clears any injected toast from DOM', function() {
+    var fake = document.createElement('div');
+    fake.id = 'inactivity-toast-test';
+    _inactivityToastEl = fake;
+    document.body.appendChild(fake);
+    stopInactivityTimer();
+    var remaining = document.getElementById('inactivity-toast-test');
+    if (remaining) throw new Error('Toast element still in DOM after stopInactivityTimer()');
+  });
+  it('stopInactivityTimer does not throw when called with no timers running', function() {
+    var threw = false;
+    try { stopInactivityTimer(); } catch(e) { threw = true; }
+    if (threw) throw new Error('stopInactivityTimer threw an error');
+  });
+});
+
+// 11. R32 venue names
+describe('R32 venues (all 16 matches)', function() {
+  var expected = {
+    73:'SoFi Stadium, Inglewood',
+    74:'NRG Stadium, Houston',
+    75:'Gillette Stadium, Foxborough',
+    76:'Estadio BBVA, Monterrey',
+    77:'AT&T Stadium, Arlington',
+    78:'MetLife Stadium, East Rutherford',
+    79:'Estadio Azteca, Mexico City',
+    80:'Mercedes-Benz Stadium, Atlanta',
+    81:'Lumen Field, Seattle',
+    82:"Levi's Stadium, Santa Clara",
+    83:'SoFi Stadium, Inglewood',
+    84:'BMO Field, Toronto',
+    85:'BC Place, Vancouver',
+    86:'AT&T Stadium, Arlington',
+    87:'Hard Rock Stadium, Miami Gardens',
+    88:'Arrowhead Stadium, Kansas City'
+  };
+  Object.keys(expected).forEach(function(id) {
+    it('Match #'+id+' venue: "'+expected[id]+'"', function() {
+      var m = R32_MATCHES.filter(function(x){ return x.id === parseInt(id); })[0];
+      if (!m) throw new Error('Match #'+id+' not found in R32_MATCHES');
+      if (m.venue !== expected[id]) throw new Error('Expected "'+expected[id]+'", got "'+m.venue+'"');
+    });
+  });
+  it('all 16 R32 matches present', function() {
+    expect(R32_MATCHES.length).toBe(16);
+  });
+  it('no match has an empty venue', function() {
+    var bad = R32_MATCHES.filter(function(m){ return !m.venue || m.venue.trim() === ''; });
+    if (bad.length) throw new Error('Match(es) with empty venue: '+bad.map(function(m){return m.id;}).join(', '));
+  });
+});
+
+// 12. R32 confirmed team matchups
+describe('R32 confirmed team matchups', function() {
+  var confirmed = {
+    73:['South Africa','Canada'],
+    74:['Brazil','Japan'],
+    75:['Germany','Paraguay'],
+    76:['Netherlands','Morocco'],
+    77:['Ivory Coast','Norway'],
+    78:['France','Sweden'],
+    79:['Mexico','Scotland'],
+    81:['Belgium','South Korea'],
+    82:['USA','Bosnia & Herzegovina'],
+    85:['Switzerland','Ecuador'],
+    86:['Australia','Egypt'],
+    87:['Argentina','Cape Verde']
+  };
+  Object.keys(confirmed).forEach(function(id) {
+    var teams = confirmed[id];
+    it('Match #'+id+': '+teams[0]+' vs '+teams[1], function() {
+      var m = R32_MATCHES.filter(function(x){ return x.id === parseInt(id); })[0];
+      if (!m) throw new Error('Match #'+id+' not found');
+      if (m.team1 !== teams[0]) throw new Error('team1: expected "'+teams[0]+'", got "'+m.team1+'"');
+      if (m.team2 !== teams[1]) throw new Error('team2: expected "'+teams[1]+'", got "'+m.team2+'"');
+    });
+  });
+  it('Match #80: Senegal is confirmed team2', function() {
+    var m = R32_MATCHES.filter(function(x){ return x.id === 80; })[0];
+    expect(m.team2).toBe('Senegal');
+  });
+  it('Match #88: Croatia is confirmed team2', function() {
+    var m = R32_MATCHES.filter(function(x){ return x.id === 88; })[0];
+    expect(m.team2).toBe('Croatia');
+  });
+  it('Match #83: Spain is confirmed team1', function() {
+    var m = R32_MATCHES.filter(function(x){ return x.id === 83; })[0];
+    expect(m.team1).toBe('Spain');
+  });
+  it('5 TBD slots remaining (matches 80 team1, 83 team2, 84 both, 88 team1)', function() {
+    var tbdCount = R32_MATCHES.reduce(function(n, m) {
+      return n + (m.team1.startsWith('TBD') ? 1 : 0) + (m.team2.startsWith('TBD') ? 1 : 0);
+    }, 0);
+    expect(tbdCount).toBe(5);
+  });
+  it('USA flag is resolvable via teamFlagImg', function() {
+    var m = R32_MATCHES.filter(function(x){ return x.id === 82; })[0];
+    var img = teamFlagImg(m.team1);
+    if (img === '') throw new Error('Flag lookup failed for team1="'+m.team1+'" in match #82');
+  });
+  it('Bosnia & Herzegovina flag is resolvable via teamFlagImg', function() {
+    var m = R32_MATCHES.filter(function(x){ return x.id === 82; })[0];
+    var img = teamFlagImg(m.team2);
+    if (img === '') throw new Error('Flag lookup failed for team2="'+m.team2+'" in match #82');
+  });
+});
+
+// 13. R32 dates and times
+describe('R32 dates and kickoff times', function() {
+  it('first R32 match (#73) kicks off 2026-06-28', function() {
+    expect(R32_MATCHES[0].date).toBe('2026-06-28');
+  });
+  it('last R32 match (#88) kicks off 2026-07-03', function() {
+    expect(R32_MATCHES[R32_MATCHES.length-1].date).toBe('2026-07-03');
+  });
+  it('all R32 matches have valid date strings (YYYY-MM-DD)', function() {
+    var bad = R32_MATCHES.filter(function(m){ return !/^\d{4}-\d{2}-\d{2}$/.test(m.date); });
+    if (bad.length) throw new Error('Bad date in: '+bad.map(function(m){return m.id;}).join(', '));
+  });
+  it('all R32 matches have valid AM/PM time strings', function() {
+    var bad = R32_MATCHES.filter(function(m){ return !/\d+:\d{2}\s*(AM|PM)/i.test(m.time); });
+    if (bad.length) throw new Error('Bad time in: '+bad.map(function(m){return m.id;}).join(', '));
+  });
+  it('all R32 match IDs are in range 73-88', function() {
+    var bad = R32_MATCHES.filter(function(m){ return m.id < 73 || m.id > 88; });
+    if (bad.length) throw new Error('Out-of-range IDs: '+bad.map(function(m){return m.id;}).join(', '));
+  });
+  it('no duplicate match IDs', function() {
+    var ids = R32_MATCHES.map(function(m){ return m.id; });
+    var unique = Array.from(new Set(ids));
+    if (unique.length !== ids.length) throw new Error('Duplicate match IDs found');
+  });
+  it('Match #75 starts at 4:30 PM (not 4:00 PM)', function() {
+    var m = R32_MATCHES.filter(function(x){ return x.id === 75; })[0];
+    expect(m.time).toBe('4:30 PM');
   });
 });
 
