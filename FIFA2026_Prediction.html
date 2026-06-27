@@ -1177,12 +1177,17 @@ function renderMatches() {
   const stage = document.getElementById('stageFilter').value;
   const grp   = document.getElementById('groupFilter').value;
   const srch  = document.getElementById('teamSearch').value.toLowerCase();
+  // Build global chronological match numbers (across ALL matches sorted by date+time)
+  const parseET=t=>{const x=t.match(/(\d+):(\d+)\s*(AM|PM)/i);if(!x)return 0;let h=parseInt(x[1]),mn=parseInt(x[2]);if(x[3].toUpperCase()==='PM'&&h!==12)h+=12;if(x[3].toUpperCase()==='AM'&&h===12)h=0;return h*60+mn;};
+  const sorted=[...matches].sort((a,b)=>a.date.localeCompare(b.date)||parseET(a.time)-parseET(b.time));
+  const matchNum={};sorted.forEach((m,i)=>matchNum[m.id]=i+1);
   const list  = matches.filter(m => {
     if (stage && m.stage!==stage) return false;
     if (grp && m.group!==grp) return false;
     if (srch && !m.team1.toLowerCase().includes(srch) && !m.team2.toLowerCase().includes(srch)) return false;
     return true;
   });
+  list.sort((a,b)=>a.date.localeCompare(b.date)||parseET(a.time)-parseET(b.time));
   let html='', lastStage='';
   list.forEach(m => {
     if (m.stage!==lastStage) { html+='<h3 style="margin:16px 0 8px;color:var(--navy);font-size:.95rem;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border);padding-bottom:6px">'+m.stage+'</h3>'; lastStage=m.stage; }
@@ -1193,7 +1198,8 @@ function renderMatches() {
     const mapLink = vi.map
       ? '<a href="'+vi.map+'" target="_blank" rel="noopener" style="color:var(--red);text-decoration:none;font-weight:600">\u{1F4CD} '+venueLabel+' <span style="font-size:.68rem;border:1px solid var(--red);border-radius:4px;padding:1px 5px;vertical-align:middle">Map ↗</span></a>'
       : '\u{1F4CD} '+venueLabel;
-    html += '<div class="match-card">'+
+    const numBadge='<span style="position:absolute;top:6px;left:8px;font-size:.68rem;font-weight:800;color:var(--red);opacity:.9">M'+matchNum[m.id]+'</span>';
+    html += '<div class="match-card" style="position:relative">'+numBadge+
       '<div class="match-team">'+(FLAGS[m.team1]||'\u{1F3F3}️')+' <span>'+m.team1+'</span></div>'+
       '<div class="match-center">'+(hasScore?'<div class="match-score">'+sc.s1+' – '+sc.s2+'</div>':'<div class="match-vs">VS</div>')+
       '<div class="match-meta">'+gTag+fmtDate(m.date)+' · '+m.time+'</div>'+
@@ -1207,10 +1213,10 @@ function renderMatches() {
 function renderPredDateButtons(){
   const isKO=document.getElementById('predStageFilter').value==='Knockout';
   const row=document.getElementById('predDateRow');
-  if(isKO){row.style.display='none';return;}
   row.style.display='flex';
   const now=new Date(),ts=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
-  const dates=[...new Set(matches.filter(m=>m.stage==='Group Stage').map(m=>m.date))].sort();
+  const knockoutStages=['Round of 32','Round of 16','Quarterfinal','Semifinal','Bronze Medal','Final'];
+  const dates=[...new Set(matches.filter(m=>isKO?knockoutStages.includes(m.stage):m.stage==='Group Stage').map(m=>m.date))].sort();
   let b='<button onclick="setPredDate(\'\')" style="padding:5px 13px;border-radius:999px;border:1px solid var(--border);cursor:pointer;font-size:.78rem;font-weight:700;background:'+(predDateFilter===''?'var(--navy)':'#fff')+';color:'+(predDateFilter===''?'#fff':'var(--navy)')+'">All</button>';
   dates.forEach(d=>{
     const sel=predDateFilter===d,isT=d===ts,lbl=new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
@@ -1236,7 +1242,12 @@ function renderPredictions() {
   document.getElementById('predGroupFilter').style.display=isKnockout?'none':'';
   const userPreds=predictions[currentUser]||{};
   const list=matches.filter(m=>{
-    if(isKnockout)return knockoutStages.includes(m.stage);
+    if(isKnockout){
+      if(!knockoutStages.includes(m.stage))return false;
+      if(predDateFilter&&m.date!==predDateFilter)return false;
+      if(onlyUnpred&&userPreds[m.id])return false;
+      return true;
+    }
     if(m.stage!=='Group Stage')return false;
     if(grp&&m.group!==grp)return false;
     if(predDateFilter&&m.date!==predDateFilter)return false;
@@ -1258,7 +1269,7 @@ function renderPredictions() {
   let html='<div class="pred-dark-wrap"><div class="pred-dark-card">', lastGrp='';
   list.forEach(m => {
     const t1 = getTeam(m,'team1'), t2 = getTeam(m,'team2');
-    if(isKnockout&&m.stage!==lastGrp){html+='<div class="pred-dark-grp-hdr">⚡ '+m.stage+'</div>';lastGrp=m.stage;}
+    if(isKnockout&&m.date!==lastGrp){html+='<div class="pred-dark-grp-hdr">📅 '+fmtDate(m.date)+'</div>';lastGrp=m.date;}
     const sc=actualScores[m.id], pred=userPreds[m.id]||{};
     // Lock predictions once the match has kicked off (all matches are EDT = UTC-4)
     const isLocked = (function(date, time) {
@@ -1289,7 +1300,7 @@ function renderPredictions() {
         '<div class="pred-dark-team right"><span>'+t2+'</span>'+teamFlagImg(t2)+'</div>'+
       '</div>'+
       '<div class="dm-meta">'+
-        '<span class="pred-dark-info">'+fmtDate(m.date)+' · '+m.time+(m.group!=='-'?' · <span style="color:#D4AF37;font-weight:700">Group '+m.group+'</span>':'')+
+        '<span class="pred-dark-info">'+m.time+(isKnockout?' · <span style="color:#D4AF37;font-weight:700">'+m.stage+'</span>':' · '+fmtDate(m.date))+(m.group!=='-'?' · <span style="color:#D4AF37;font-weight:700">Group '+m.group+'</span>':'')+
           (sc!==undefined?' · <span class="pred-dark-actual">Actual: '+sc.s1+'-'+sc.s2+'</span>':'')+
           (isLocked?' <span class="pred-dark-lock">🔒 Locked</span>':'')+
         '</span>'+
