@@ -1543,4 +1543,87 @@ function _darkGroupCard(g, teams) {
       '<span class="dgc-pts'+(q?'':' dim')+'">'+s.pts+'</span>'+
     '</div>';
   }).join('');
-  return '<d
+  return '<div class="dgc">'+
+    '<div class="dgc-hdr"><span class="gname">Group '+g+'</span><span class="gpts-lbl">PTS</span></div>'+
+    rows+'</div>';
+}
+
+function _darkBracketCard(m) {
+  const sc = actualScores[m.id];
+  const kt = knockoutTeams[m.id] || {};
+  const t1 = kt.team1 || m.team1;
+  const t2 = kt.team2 || m.team2;
+  const isTBD1 = !t1 || t1==='TBD';
+  const isTBD2 = !t2 || t2==='TBD';
+  const hasScore = sc !== undefined;
+  const w1 = hasScore && sc.s1 > sc.s2;
+  const w2 = hasScore && sc.s2 > sc.s1;
+  const dateStr = new Date(m.date+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  const vi = VENUE_INFO[m.venue] || {city:'', stadium:m.venue};
+  const venueStr = vi.city ? vi.city+', '+(vi.state||'') : vi.stadium;
+  const isBronze = m.stage === 'Bronze Medal';
+
+  function slot(t, isTBD, score, isWin) {
+    const code = TEAM_CODES[t];
+    const bullet = isTBD
+      ? '<div class="dbc-bullet"></div>'
+      : '<div class="dbc-bullet">'+(code?'<img src="https://flagcdn.com/28x21/'+code+'.png" alt="'+t+'">':'')+'</div>';
+    const lbl = isTBD ? t||'TBD' : t;
+    return '<div class="dbc-slot">'+bullet+
+      '<span class="dbc-label'+(isTBD?'':' real')+'">'+lbl+'</span>'+
+      (hasScore?'<span class="dbc-score'+(isWin?' win':'')+'">'+score+'</span>':'')+
+    '</div>';
+  }
+
+  return '<div class="dbc">'+
+    '<div class="dbc-date">'+(isBronze?'🥉 Bronze &nbsp;·&nbsp; ':'')+dateStr+' &nbsp;·&nbsp; '+m.time+'</div>'+
+    slot(t1,isTBD1,sc&&sc.s1,w1)+
+    slot(t2,isTBD2,sc&&sc.s2,w2)+
+    '<div class="dbc-foot"><span>📍 '+venueStr+'</span><span>#'+m.id+'</span></div>'+
+  '</div>';
+}
+
+function renderStandingsGS() {
+  const leftHTML = Object.entries(GROUPS).map(([g,teams]) => _darkGroupCard(g,teams)).join('');
+  // Right col: upcoming R32 matches
+  const r32 = matches.filter(m => m.stage==='Round of 32');
+  const rightHTML = r32.map(m => _darkBracketCard(m)).join('');
+  return '<div class="st-two-col">'+
+    '<div>'+leftHTML+'</div>'+
+    '<div>'+rightHTML+'</div>'+
+  '</div>';
+}
+
+function renderBracketMatches(stageKey) {
+  const stageMap = {R32:'Round of 32',R16:'Round of 16',QF:'Quarterfinal',SF:'Semifinal',F:'Final'};
+  let stageMatches = matches.filter(m => m.stage === stageMap[stageKey]);
+  if (stageKey === 'F') stageMatches = matches.filter(m => m.stage==='Final'||m.stage==='Bronze Medal');
+  if (!stageMatches.length) return '<p style="color:rgba(255,255,255,.4);text-align:center;padding:40px">No matches found.</p>';
+  return '<div class="dark-bracket-grid">'+stageMatches.map(m=>_darkBracketCard(m)).join('')+'</div>';
+}
+
+function renderAll() { renderGroups(); renderMatches(); renderTodayMatches(); renderPredictions(); renderLeaderboard(); renderStandings(); if (adminUnlocked) renderAdminScores(); }
+function showSaveConfirm(msg, dur=3000) {
+  const el = document.getElementById('saveConfirm');
+  if (!el) { toast(msg); return; }
+  el.textContent = msg; el.style.display = 'block';
+  clearTimeout(el._t); el._t = setTimeout(() => el.style.display='none', dur);
+}
+function toast(msg,dur=2500) { const el=document.getElementById('toast'); el.textContent=msg; el.style.display='block'; clearTimeout(el._t); el._t=setTimeout(()=>el.style.display='none',dur); }
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('open'); }));
+
+init();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => console.log('SW registered:', reg.scope))
+      .catch(err => console.warn('SW registration failed:', err));
+  });
+}
+</script>
+</body>
+</html>
