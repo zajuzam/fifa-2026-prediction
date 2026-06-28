@@ -1217,7 +1217,13 @@ function renderPredDateButtons(){
   row.style.display='flex';
   const now=new Date(),ts=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
   const knockoutStages=['Round of 32','Round of 16','Quarterfinal','Semifinal','Bronze Medal','Final'];
-  const dates=[...new Set(matches.filter(m=>isKO?knockoutStages.includes(m.stage):m.stage==='Group Stage').map(m=>m.date))].sort();
+  const R32_CUTOFF='2026-07-03'; // dates after this are R16+, hidden until teams are set
+  const allKODates=[...new Set(matches.filter(m=>isKO?knockoutStages.includes(m.stage):m.stage==='Group Stage').map(m=>m.date))].sort();
+  // For KO view: only show post-R32 dates if at least one match on that date has real teams set
+  const dates=isKO?allKODates.filter(d=>{
+    if(d<=R32_CUTOFF)return true;
+    return matches.filter(m=>m.date===d&&knockoutStages.includes(m.stage)).some(m=>getTeam(m,'team1')!=='TBD'&&getTeam(m,'team2')!=='TBD');
+  }):allKODates;
   let b='<button onclick="setPredDate(\'\')" style="padding:5px 13px;border-radius:999px;border:1px solid var(--border);cursor:pointer;font-size:.78rem;font-weight:700;background:'+(predDateFilter===''?'var(--navy)':'#fff')+';color:'+(predDateFilter===''?'#fff':'var(--navy)')+'">All</button>';
   dates.forEach(d=>{
     const sel=predDateFilter===d,isT=d===ts,lbl=new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
