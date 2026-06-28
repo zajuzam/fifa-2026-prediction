@@ -1118,12 +1118,13 @@ function renderTodayMatches() {
     const sc=actualScores[m.id], hasScore=sc!==undefined;
     const grpLabel=m.group!=='-'?'GROUP '+m.group:m.stage.toUpperCase();
     const mapLink=vi.map?' · <a href="'+vi.map+'" target="_blank" rel="noopener">🗺 Map</a>':'';
+    const t1=getTeam(m,'team1'), t2=getTeam(m,'team2');
     rows+=
       '<div class="dark-match-row">'+
         '<div class="dm-time">'+m.time+' ET</div>'+
-        '<div class="dm-team">'+teamFlagImg(m.team1)+'<span>'+m.team1+'</span></div>'+
+        '<div class="dm-team">'+teamFlagImg(t1)+'<span>'+t1+'</span></div>'+
         (hasScore?'<div class="dm-score">'+sc.s1+' - '+sc.s2+'</div>':'<div class="dm-vs">VS</div>')+
-        '<div class="dm-team right"><span>'+m.team2+'</span>'+teamFlagImg(m.team2)+'</div>'+
+        '<div class="dm-team right"><span>'+t2+'</span>'+teamFlagImg(t2)+'</div>'+
       '</div>'+
       '<div class="dm-meta">'+
         '<span class="dm-group">'+grpLabel+'</span>'+
