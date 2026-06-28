@@ -171,6 +171,7 @@
   /* two-col GS layout */
   .st-two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}
   @media(max-width:700px){.st-two-col{grid-template-columns:1fr}}
+  .sr-info-icon:hover .sr-tooltip{display:block !important}
   /* dark group card */
   .dgc{background:#152444;border-radius:10px;overflow:hidden;margin-bottom:8px}
   .dgc-hdr{padding:8px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,.06)}
@@ -332,7 +333,7 @@
     <div class="card-hdr">&#127885; Leaderboard</div>
     <div class="card-body" style="padding:0">
       <table id="leaderboardTable">
-        <thead><tr><th style="width:50px">Rank</th><th>Player</th><th>Predictions</th><th>Exact Scores</th><th>Correct Results</th><th>Points</th></tr></thead>
+        <thead><tr><th style="width:50px">Rank</th><th>Player</th><th>Predictions</th><th>Exact Scores</th><th>Correct Results</th><th>Points</th><th>Strike Rate <span style="display:inline-block;width:15px;height:15px;border-radius:50%;background:var(--navy);color:#fff;font-size:.65rem;font-weight:800;line-height:15px;text-align:center;cursor:help;position:relative" class="sr-info-icon">i<span style="display:none;position:absolute;bottom:120%;left:50%;transform:translateX(-50%);background:#1a1a2e;color:#fff;font-size:.75rem;font-weight:400;padding:8px 12px;border-radius:8px;width:220px;line-height:1.5;box-shadow:0 4px 12px rgba(0,0,0,.3);z-index:999;white-space:normal;text-align:left" class="sr-tooltip">📊 <strong>Strike Rate</strong> measures prediction efficiency:<br><br>(Exact Scores × 3 + Correct Results × 1) ÷ (Total Predictions × 3) × 100%<br><br>🟢 ≥60% Excellent &nbsp;🟠 33–59% Good &nbsp;🔴 &lt;33% Needs work</span></span></th></tr></thead>
         <tbody id="lbBody"></tbody>
       </table>
     </div>
@@ -1367,19 +1368,24 @@ function renderLeaderboard() {
     const co_corr  = pd ? (pd.carryover_correct      || 0) : 0;
     const co_preds = pd ? (pd.carryover_predictions  || 0) : 0;
     const country=pd?(pd.country||''):'';
-    return {name, total:total+co_pts, exact:exact+co_exact, correct:correct+co_corr, predCount:predCount+co_preds, country};
+    const strikeRate = predCount+co_preds > 0
+      ? Math.round(((exact+co_exact)*3 + (correct+co_corr)) / ((predCount+co_preds)*3) * 1000) / 10
+      : 0;
+    return {name, total:total+co_pts, exact:exact+co_exact, correct:correct+co_corr, predCount:predCount+co_preds, country, strikeRate};
   }).sort((a,b) => b.total-a.total||b.exact-a.exact);
 
   const medals=['\u{1F947}','\u{1F948}','\u{1F949}'];
-  document.getElementById('lbBody').innerHTML = rows.map((r,i) =>
-    '<tr class="'+(i<3?'rank-'+(i+1):'')+'">'+
+  document.getElementById('lbBody').innerHTML = rows.map((r,i) => {
+    const srColor = r.strikeRate>=60?'var(--green)':r.strikeRate>=33?'var(--orange)':'var(--red)';
+    return '<tr class="'+(i<3?'rank-'+(i+1):'')+'">'+
     '<td style="text-align:center">'+(medals[i]||i+1)+'</td>'+
     '<td><strong>'+(r.country?countryToFlag(r.country)+' ':'')+r.name+'</strong></td>'+
     '<td style="text-align:center">'+r.predCount+'</td>'+
     '<td style="text-align:center;color:var(--green)">'+r.exact+'</td>'+
     '<td style="text-align:center;color:var(--orange)">'+r.correct+'</td>'+
-    '<td style="text-align:center;font-size:1.1rem;font-weight:800;color:var(--navy)">'+r.total+'</td></tr>'
-  ).join('');
+    '<td style="text-align:center;font-size:1.1rem;font-weight:800;color:var(--navy)">'+r.total+'</td>'+
+    '<td style="text-align:center;font-weight:700;color:'+srColor+'">'+r.strikeRate.toFixed(1)+'%</td></tr>';
+  }).join('');
   const maxPts=rows[0]?.total||0, totalPred=rows.reduce((a,r)=>a+r.predCount,0);
   document.getElementById('lbStats').innerHTML =
     '<div class="stat-box"><div class="stat-num">'+participants.length+'</div><div class="stat-lbl">Players</div></div>'+
