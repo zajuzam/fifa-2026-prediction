@@ -171,7 +171,7 @@
   /* two-col GS layout */
   .st-two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}
   @media(max-width:700px){.st-two-col{grid-template-columns:1fr}}
-  .sr-info-icon:hover .sr-tooltip{display:block !important}
+  #srTooltip{position:fixed;background:#1a1a2e;color:#fff;font-size:.78rem;padding:10px 14px;border-radius:8px;width:260px;line-height:1.6;box-shadow:0 4px 16px rgba(0,0,0,.4);z-index:9999;pointer-events:none;display:none}
   /* dark group card */
   .dgc{background:#152444;border-radius:10px;overflow:hidden;margin-bottom:8px}
   .dgc-hdr{padding:8px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,.06)}
@@ -333,7 +333,7 @@
     <div class="card-hdr">&#127885; Leaderboard</div>
     <div class="card-body" style="padding:0">
       <table id="leaderboardTable">
-        <thead><tr><th style="width:50px">Rank</th><th>Player</th><th>Predictions</th><th>Exact Scores</th><th>Correct Results</th><th>Points</th><th>Strike Rate <span style="display:inline-block;width:15px;height:15px;border-radius:50%;background:var(--navy);color:#fff;font-size:.65rem;font-weight:800;line-height:15px;text-align:center;cursor:help;position:relative" class="sr-info-icon">i<span style="display:none;position:absolute;bottom:120%;left:50%;transform:translateX(-50%);background:#1a1a2e;color:#fff;font-size:.75rem;font-weight:400;padding:8px 12px;border-radius:8px;width:220px;line-height:1.5;box-shadow:0 4px 12px rgba(0,0,0,.3);z-index:999;white-space:normal;text-align:left" class="sr-tooltip">Strike Rate = (Exact Scores × 3 + Correct Results × 1) ÷ (Predictions × 3) × 100%. Exact scores earn more weight. 100% = all exact, 33% = all results correct, 0% = all wrong.</span></span></th></tr></thead>
+        <thead><tr><th style="width:50px">Rank</th><th>Player</th><th>Predictions</th><th>Exact Scores</th><th>Correct Results</th><th>Points</th><th>Strike Rate <span style="display:inline-block;width:15px;height:15px;border-radius:50%;background:var(--navy);color:#fff;font-size:.65rem;font-weight:800;line-height:15px;text-align:center;cursor:help" class="sr-info-icon" onmouseenter="showSRTooltip(event)" onmouseleave="hideSRTooltip()">i</span></th></tr></thead>
         <tbody id="lbBody"></tbody>
       </table>
     </div>
@@ -1622,6 +1622,8 @@ function showSaveConfirm(msg, dur=3000) {
   el.textContent = msg; el.style.display = 'block';
   clearTimeout(el._t); el._t = setTimeout(() => el.style.display='none', dur);
 }
+function showSRTooltip(e){const t=document.getElementById('srTooltip');t.style.display='block';const x=e.clientX,y=e.clientY;t.style.left=(x+12)+'px';t.style.top=(y-t.offsetHeight-8)+'px';}
+function hideSRTooltip(){document.getElementById('srTooltip').style.display='none';}
 function toast(msg,dur=2500) { const el=document.getElementById('toast'); el.textContent=msg; el.style.display='block'; clearTimeout(el._t); el._t=setTimeout(()=>el.style.display='none',dur); }
 function openModal(id)  { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
@@ -1638,5 +1640,6 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+<div id="srTooltip">Strike Rate = (Exact Scores × 3 + Correct Results × 1) ÷ (Predictions × 3) × 100%. Exact scores earn more weight. 100% = all exact, 33% = all results correct, 0% = all wrong.</div>
 </body>
 </html>
