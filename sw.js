@@ -1,5 +1,5 @@
 // FIFA 2026 Score Prediction — Service Worker
-const CACHE_NAME = 'fifa2026-v2';
+const CACHE_NAME = 'fifa2026-v3';
 
 const STATIC_ASSETS = [
   '/FIFA2026_Prediction.html',

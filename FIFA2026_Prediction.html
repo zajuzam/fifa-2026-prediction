@@ -734,6 +734,17 @@ async function loadFromSupabase() {
       scores.forEach(s => { actualScores[s.match_id] = {s1:s.score1, s2:s.score2}; });
       localStorage.setItem('fifa_actual', JSON.stringify(actualScores));
     }
+    try {
+      const {data:ko, error:e4} = await db.from('knockout_teams').select('*');
+      if (e4) throw e4;
+      if (ko) {
+        knockoutTeams = {};
+        ko.forEach(k => { knockoutTeams[k.match_id] = {team1:k.team1, team2:k.team2}; });
+        localStorage.setItem('fifa_knockout_teams', JSON.stringify(knockoutTeams));
+      }
+    } catch(err) {
+      console.warn('Knockout teams load error (table may not exist yet):', err.message);
+    }
     src.textContent = '✅ Synced with Supabase';
     renderAll();
   } catch(err) {
@@ -1465,6 +1476,7 @@ async function saveAdminScores() {
     ? matches.filter(m => knockoutStages.includes(m.stage))
     : matches.filter(m => m.stage === 'Group Stage');
 
+  const koRows = [];
   stageMatches.forEach(m => {
     const s1el = document.getElementById('admin_'+m.id+'_s1');
     const s2el = document.getElementById('admin_'+m.id+'_s2');
@@ -1478,18 +1490,28 @@ async function saveAdminScores() {
       const t1el = document.getElementById('ko_'+m.id+'_t1');
       const t2el = document.getElementById('ko_'+m.id+'_t2');
       if (t1el && t2el) {
-        knockoutTeams[m.id] = {team1: t1el.value.trim()||'TBD', team2: t2el.value.trim()||'TBD'};
+        const team1 = t1el.value.trim()||'TBD';
+        const team2 = t2el.value.trim()||'TBD';
+        knockoutTeams[m.id] = {team1, team2};
+        koRows.push({match_id:m.id, team1, team2, updated_at:new Date().toISOString()});
       }
     }
   });
   localStorage.setItem('fifa_actual', JSON.stringify(actualScores));
   localStorage.setItem('fifa_knockout_teams', JSON.stringify(knockoutTeams));
+  let koError = null;
+  if (koRows.length && db) {
+    const {error} = await db.from('knockout_teams').upsert(koRows, {onConflict:'match_id'});
+    koError = error;
+  }
   if (rows.length) {
     if (db) {
       toast('Saving to Supabase…');
       const {error} = await db.from('actual_scores').upsert(rows, {onConflict:'match_id'});
       toast(error ? '⚠️ Saved locally: '+error.message : '✅ '+rows.length+' score(s) saved to Supabase!');
     } else { toast('✅ '+rows.length+' score(s) saved locally.'); }
+  } else if (koRows.length) {
+    toast(koError ? '⚠️ Knockout teams saved locally only: '+koError.message : '✅ Knockout teams saved to Supabase — visible to everyone!');
   } else { toast('✅ Knockout teams saved!'); }
   renderGroups(); renderLeaderboard(); renderAdminScores();
 }
