@@ -22,13 +22,20 @@ h1{font-size:1.6rem;margin-bottom:4px}
 </head>
 <body>
 <h1>FIFA 2026 Prediction - Test Suite</h1>
-<p class="subtitle">Covers: TEAM_CODES, teamFlagImg, countryToFlag, fmtDate, isMatchLocked, renderTodayMatches, renderPredictions (sort by time + group label + locking), renderPredDateButtons</p>
+<p class="subtitle">Covers: TEAM_CODES, teamFlagImg, countryToFlag, fmtDate, isMatchLocked, renderTodayMatches, renderPredictions (sort by time + group label + locking), renderPredDateButtons, predStageMatch (Group Stage/R32/R16/QF/SF/Final dropdown split)</p>
 <div id="summary"></div>
 <div id="results"></div>
 <div id="hidden-dom">
   <div id="todayMatchesContainer"></div>
   <div id="predictContainer"></div>
-  <select id="predStageFilter"><option value="Group Stage">Group Stage</option><option value="Knockout">Knockout</option></select>
+  <select id="predStageFilter">
+    <option value="Group Stage">Group Stage</option>
+    <option value="Round of 32">Round of 32</option>
+    <option value="Round of 16">Round of 16</option>
+    <option value="Quarterfinal">Quarter Final</option>
+    <option value="Semifinal">Semi Final</option>
+    <option value="Final">Final</option>
+  </select>
   <select id="predGroupFilter"><option value="">All</option></select>
   <div id="predDateRow" style="display:flex"></div>
   <div id="predDateBtns"></div>

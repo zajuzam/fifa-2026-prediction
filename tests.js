@@ -136,14 +136,25 @@ function renderTodayMatches() {
   container.innerHTML = '<div class="dark-schedule"><div class="dark-date-hdr">'+dayName+' '+monthDay+'</div><div class="dark-matches-card">'+rows+'</div></div>';
 }
 
+function predStageMatch(m, predStage) {
+  if (predStage === 'Group Stage') return m.stage === 'Group Stage';
+  if (predStage === 'Final') return m.stage === 'Final' || m.stage === 'Bronze Medal';
+  return m.stage === predStage;
+}
+
 function renderPredDateButtons() {
-  var isKO = document.getElementById('predStageFilter').value === 'Knockout';
+  var predStage = document.getElementById('predStageFilter').value;
+  var isKO = predStage !== 'Group Stage';
   var row = document.getElementById('predDateRow');
-  if (isKO) { row.style.display='none'; return; }
   row.style.display = 'flex';
   var now = new Date();
   var ts = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
-  var dates = Array.from(new Set(matches.filter(function(m){ return m.stage==='Group Stage'; }).map(function(m){ return m.date; }))).sort();
+  var R32_CUTOFF = '2026-07-03';
+  var allKODates = Array.from(new Set(matches.filter(function(m){ return predStageMatch(m, predStage); }).map(function(m){ return m.date; }))).sort();
+  var dates = isKO ? allKODates.filter(function(d) {
+    if (d <= R32_CUTOFF) return true;
+    return matches.filter(function(m){ return m.date===d && predStageMatch(m, predStage); }).some(function(m){ return getTeam(m,'team1')!=='TBD' && getTeam(m,'team2')!=='TBD'; });
+  }) : allKODates;
   var b = '<button onclick="setPredDate(\'\');" style="background:'+(predDateFilter===''?'var(--navy)':'#fff')+';color:'+(predDateFilter===''?'#fff':'var(--navy)')+'">All</button>';
   dates.forEach(function(d) {
     var sel = predDateFilter===d, isT = d===ts;
@@ -164,18 +175,29 @@ function renderPredictions() {
   var predStage = document.getElementById('predStageFilter').value;
   var grp = document.getElementById('predGroupFilter').value;
   var onlyUnpred = document.getElementById('showUnpredicted').checked;
-  var isKnockout = predStage === 'Knockout';
-  var knockoutStages = ['Round of 32','Round of 16','Quarterfinal','Semifinal','Bronze Medal','Final'];
+  var isKnockout = predStage !== 'Group Stage';
   document.getElementById('predGroupFilter').style.display = isKnockout ? 'none' : '';
   var userPreds = predictions[currentUser] || {};
   var list = matches.filter(function(m) {
-    if (isKnockout) return knockoutStages.includes(m.stage);
+    if (isKnockout) {
+      if (!predStageMatch(m, predStage)) return false;
+      if (predDateFilter && m.date !== predDateFilter) return false;
+      if (onlyUnpred && userPreds[m.id]) return false;
+      return true;
+    }
     if (m.stage !== 'Group Stage') return false;
     if (grp && m.group !== grp) return false;
     if (predDateFilter && m.date !== predDateFilter) return false;
     if (onlyUnpred && userPreds[m.id]) return false;
     return true;
   });
+  if (isKnockout) {
+    var anyTeamSet = list.some(function(m){ return getTeam(m,'team1')!=='TBD' || getTeam(m,'team2')!=='TBD'; });
+    if (!anyTeamSet) {
+      container.innerHTML = '<div class="alert alert-warn">'+predStage+' predictions will be available once the Admin sets the team matchups.</div>';
+      return;
+    }
+  }
   // Sort by date then by kick-off time (EST)
   var parseETp = function(t) {
     var x = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
@@ -441,8 +463,8 @@ describe('renderPredictions() - dark design, sort by time, group label, locking'
   });
   it('no group label for knockout matches (group=-)', function(){
     resetState(); pinVerified=true; currentUser='Saju';
-    matches=[{id:'m1',date:'2099-07-01',team1:'TBD',team2:'TBD',group:'-',stage:'Quarterfinal',time:'3:00 PM',venue:'MetLife Stadium'}];
-    document.getElementById('predStageFilter').value='Knockout';
+    matches=[{id:'m1',date:'2099-07-01',team1:'France',team2:'Croatia',group:'-',stage:'Quarterfinal',time:'3:00 PM',venue:'MetLife Stadium'}];
+    document.getElementById('predStageFilter').value='Quarterfinal';
     renderPredictions();
     expect(document.getElementById('predictContainer').innerHTML).notToContain('Group -');
   });
@@ -560,13 +582,13 @@ describe('renderPredictions() - dark design, sort by time, group label, locking'
   // Knockout
   it('knockout stage header shown', function(){
     resetState(); pinVerified=true; currentUser='Saju';
-    matches=[{id:'m1',date:'2099-07-01',team1:'TBD',team2:'TBD',group:'-',stage:'Quarterfinal',time:'3:00 PM',venue:'MetLife Stadium'}];
-    document.getElementById('predStageFilter').value='Knockout'; renderPredictions();
+    matches=[{id:'m1',date:'2099-07-01',team1:'France',team2:'Croatia',group:'-',stage:'Quarterfinal',time:'3:00 PM',venue:'MetLife Stadium'}];
+    document.getElementById('predStageFilter').value='Quarterfinal'; renderPredictions();
     expect(document.getElementById('predictContainer').innerHTML).toContain('Quarterfinal');
   });
   it('group filter hidden for knockout', function(){
     resetState(); pinVerified=true; currentUser='Saju'; matches=[];
-    document.getElementById('predStageFilter').value='Knockout'; renderPredictions();
+    document.getElementById('predStageFilter').value='Quarterfinal'; renderPredictions();
     expect(document.getElementById('predGroupFilter').style.display).toBe('none');
   });
 });
@@ -575,10 +597,10 @@ describe('renderPredictions() - dark design, sort by time, group label, locking'
 describe('renderPredDateButtons() - date filter buttons', function() {
   var todayStr=(function(){ var n=new Date(); return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0'); })();
 
-  it('date row hidden for Knockout', function(){
-    resetState(); document.getElementById('predStageFilter').value='Knockout';
+  it('date row stays visible for knockout stages (per-stage date buttons, not hidden)', function(){
+    resetState(); document.getElementById('predStageFilter').value='Quarterfinal';
     renderPredDateButtons();
-    expect(document.getElementById('predDateRow').style.display).toBe('none');
+    expect(document.getElementById('predDateRow').style.display).toBe('flex');
   });
   it('date row shown for Group Stage', function(){
     resetState(); matches=[{id:'m1',date:'2026-06-11',stage:'Group Stage',team1:'A',team2:'B',group:'A',time:'3:00 PM',venue:'MetLife Stadium'}];
@@ -617,6 +639,193 @@ describe('renderPredDateButtons() - date filter buttons', function() {
   it('setPredDate resets with empty string', function(){
     resetState(); predDateFilter='2026-06-11'; matches=[]; setPredDate('');
     expect(predDateFilter).toBe('');
+  });
+});
+
+// 9. predStageMatch() - dropdown stage split (Group Stage/R32/R16/QF/SF/Final)
+describe('predStageMatch() - stage dropdown split', function(){
+  var gs = {id:1, stage:'Group Stage'};
+  var r32 = {id:2, stage:'Round of 32'};
+  var r16 = {id:3, stage:'Round of 16'};
+  var qf  = {id:4, stage:'Quarterfinal'};
+  var sf  = {id:5, stage:'Semifinal'};
+  var fin = {id:6, stage:'Final'};
+  var bronze = {id:7, stage:'Bronze Medal'};
+
+  it('"Group Stage" matches only Group Stage matches', function(){
+    expect(predStageMatch(gs,'Group Stage')).toBeTrue();
+    expect(predStageMatch(r32,'Group Stage')).toBeFalse();
+  });
+  it('"Round of 32" matches only Round of 32', function(){
+    expect(predStageMatch(r32,'Round of 32')).toBeTrue();
+    expect(predStageMatch(r16,'Round of 32')).toBeFalse();
+  });
+  it('"Round of 16" matches only Round of 16', function(){
+    expect(predStageMatch(r16,'Round of 16')).toBeTrue();
+    expect(predStageMatch(qf,'Round of 16')).toBeFalse();
+    expect(predStageMatch(r32,'Round of 16')).toBeFalse();
+  });
+  it('"Quarterfinal" matches only Quarterfinal', function(){
+    expect(predStageMatch(qf,'Quarterfinal')).toBeTrue();
+    expect(predStageMatch(sf,'Quarterfinal')).toBeFalse();
+  });
+  it('"Semifinal" matches only Semifinal', function(){
+    expect(predStageMatch(sf,'Semifinal')).toBeTrue();
+    expect(predStageMatch(fin,'Semifinal')).toBeFalse();
+  });
+  it('"Final" matches both Final and Bronze Medal', function(){
+    expect(predStageMatch(fin,'Final')).toBeTrue();
+    expect(predStageMatch(bronze,'Final')).toBeTrue();
+  });
+  it('"Final" does not match Semifinal', function(){
+    expect(predStageMatch(sf,'Final')).toBeFalse();
+  });
+});
+
+// 10. renderPredictions() - per-stage filtering with the new dropdown
+describe('renderPredictions() - per-stage filtering (Group Stage/R32/R16/QF/SF/Final)', function(){
+  function koMatches(){
+    return [
+      {id:'g1', date:'2026-06-11', team1:'Argentina', team2:'France', group:'A', stage:'Group Stage', time:'3:00 PM', venue:'MetLife Stadium'},
+      {id:'r32a', date:'2026-06-28', team1:'South Africa', team2:'Canada', group:'-', stage:'Round of 32', time:'3:00 PM', venue:'MetLife Stadium'},
+      {id:'r16a', date:'2026-07-04', team1:'Brazil', team2:'Germany', group:'-', stage:'Round of 16', time:'1:00 PM', venue:'MetLife Stadium'},
+      {id:'qfa', date:'2026-07-09', team1:'Spain', team2:'Portugal', group:'-', stage:'Quarterfinal', time:'4:00 PM', venue:'MetLife Stadium'},
+      {id:'sfa', date:'2026-07-14', team1:'England', team2:'Netherlands', group:'-', stage:'Semifinal', time:'3:00 PM', venue:'MetLife Stadium'},
+      {id:'fina', date:'2026-07-19', team1:'Croatia', team2:'Belgium', group:'-', stage:'Final', time:'3:00 PM', venue:'MetLife Stadium'},
+      {id:'bronze1', date:'2026-07-18', team1:'Uruguay', team2:'Japan', group:'-', stage:'Bronze Medal', time:'5:00 PM', venue:'MetLife Stadium'}
+    ];
+  }
+
+  it('"Round of 32" shows only Round of 32 matches', function(){
+    resetState(); pinVerified=true; currentUser='Saju'; matches=koMatches();
+    document.getElementById('predStageFilter').value='Round of 32';
+    renderPredictions();
+    var h=document.getElementById('predictContainer').innerHTML;
+    expect(h).toContain('South Africa'); expect(h).toContain('Canada');
+    expect(h).notToContain('Brazil'); expect(h).notToContain('Spain'); expect(h).notToContain('Argentina');
+  });
+  it('"Round of 16" shows only Round of 16 matches', function(){
+    resetState(); pinVerified=true; currentUser='Saju'; matches=koMatches();
+    document.getElementById('predStageFilter').value='Round of 16';
+    renderPredictions();
+    var h=document.getElementById('predictContainer').innerHTML;
+    expect(h).toContain('Brazil'); expect(h).toContain('Germany');
+    expect(h).notToContain('South Africa'); expect(h).notToContain('Spain');
+  });
+  it('"Quarterfinal" shows only Quarterfinal matches', function(){
+    resetState(); pinVerified=true; currentUser='Saju'; matches=koMatches();
+    document.getElementById('predStageFilter').value='Quarterfinal';
+    renderPredictions();
+    var h=document.getElementById('predictContainer').innerHTML;
+    expect(h).toContain('Spain'); expect(h).toContain('Portugal');
+    expect(h).notToContain('Brazil'); expect(h).notToContain('England');
+  });
+  it('"Semifinal" shows only Semifinal matches', function(){
+    resetState(); pinVerified=true; currentUser='Saju'; matches=koMatches();
+    document.getElementById('predStageFilter').value='Semifinal';
+    renderPredictions();
+    var h=document.getElementById('predictContainer').innerHTML;
+    expect(h).toContain('England'); expect(h).toContain('Netherlands');
+    expect(h).notToContain('Croatia'); expect(h).notToContain('Spain');
+  });
+  it('"Final" shows both the Final match and the Bronze Medal match', function(){
+    resetState(); pinVerified=true; currentUser='Saju'; matches=koMatches();
+    document.getElementById('predStageFilter').value='Final';
+    renderPredictions();
+    var h=document.getElementById('predictContainer').innerHTML;
+    expect(h).toContain('Croatia'); expect(h).toContain('Belgium');
+    expect(h).toContain('Uruguay'); expect(h).toContain('Japan');
+  });
+  it('"Final" excludes Semifinal matches', function(){
+    resetState(); pinVerified=true; currentUser='Saju'; matches=koMatches();
+    document.getElementById('predStageFilter').value='Final';
+    renderPredictions();
+    expect(document.getElementById('predictContainer').innerHTML).notToContain('Netherlands');
+  });
+  it('"Group Stage" still only shows Group Stage matches (unaffected by KO split)', function(){
+    resetState(); pinVerified=true; currentUser='Saju'; matches=koMatches();
+    document.getElementById('predStageFilter').value='Group Stage';
+    renderPredictions();
+    var h=document.getElementById('predictContainer').innerHTML;
+    expect(h).toContain('Argentina'); expect(h).notToContain('South Africa');
+  });
+
+  ['Round of 32','Round of 16','Quarterfinal','Semifinal','Final'].forEach(function(stage){
+    it('group filter is hidden when "'+stage+'" is selected', function(){
+      resetState(); pinVerified=true; currentUser='Saju'; matches=koMatches();
+      document.getElementById('predStageFilter').value=stage;
+      renderPredictions();
+      expect(document.getElementById('predGroupFilter').style.display).toBe('none');
+    });
+  });
+  it('group filter is visible when "Group Stage" is selected', function(){
+    resetState(); pinVerified=true; currentUser='Saju'; matches=koMatches();
+    document.getElementById('predStageFilter').value='Group Stage';
+    renderPredictions();
+    expect(document.getElementById('predGroupFilter').style.display).toBe('');
+  });
+});
+
+// 11. renderPredictions() - "waiting for Admin" gate, per stage
+describe('renderPredictions() - waiting-for-Admin message names the selected stage', function(){
+  it('"Round of 16" with all-TBD teams shows a Round of 16 specific waiting message', function(){
+    resetState(); pinVerified=true; currentUser='Saju';
+    matches=[{id:'r16x', date:'2026-07-04', team1:'TBD', team2:'TBD', group:'-', stage:'Round of 16', time:'1:00 PM', venue:'MetLife Stadium'}];
+    document.getElementById('predStageFilter').value='Round of 16';
+    renderPredictions();
+    expect(document.getElementById('predictContainer').innerHTML).toContain('Round of 16 predictions will be available');
+  });
+  it('"Quarterfinal" with all-TBD teams shows a Quarterfinal specific waiting message', function(){
+    resetState(); pinVerified=true; currentUser='Saju';
+    matches=[{id:'qfx', date:'2026-07-09', team1:'TBD', team2:'TBD', group:'-', stage:'Quarterfinal', time:'4:00 PM', venue:'MetLife Stadium'}];
+    document.getElementById('predStageFilter').value='Quarterfinal';
+    renderPredictions();
+    expect(document.getElementById('predictContainer').innerHTML).toContain('Quarterfinal predictions will be available');
+  });
+  it('"Final" with all-TBD teams (Final + Bronze Medal) shows a Final specific waiting message', function(){
+    resetState(); pinVerified=true; currentUser='Saju';
+    matches=[
+      {id:'finx', date:'2026-07-19', team1:'TBD', team2:'TBD', group:'-', stage:'Final', time:'3:00 PM', venue:'MetLife Stadium'},
+      {id:'bronzex', date:'2026-07-18', team1:'TBD', team2:'TBD', group:'-', stage:'Bronze Medal', time:'5:00 PM', venue:'MetLife Stadium'}
+    ];
+    document.getElementById('predStageFilter').value='Final';
+    renderPredictions();
+    expect(document.getElementById('predictContainer').innerHTML).toContain('Final predictions will be available');
+  });
+  it('once Admin sets one real team via knockoutTeams, the waiting message is replaced by the match', function(){
+    resetState(); pinVerified=true; currentUser='Saju';
+    matches=[{id:'r16y', date:'2026-07-04', team1:'TBD', team2:'TBD', group:'-', stage:'Round of 16', time:'1:00 PM', venue:'MetLife Stadium'}];
+    knockoutTeams={r16y:{team1:'Brazil', team2:'TBD'}};
+    document.getElementById('predStageFilter').value='Round of 16';
+    renderPredictions();
+    var h=document.getElementById('predictContainer').innerHTML;
+    expect(h).toContain('Brazil');
+    expect(h).notToContain('predictions will be available');
+  });
+});
+
+// 12. renderPredDateButtons() - per-stage date buttons with new dropdown
+describe('renderPredDateButtons() - per-stage dates with new dropdown split', function(){
+  function koMatches(){
+    return [
+      {id:'r16a', date:'2026-07-04', team1:'Brazil', team2:'Germany', group:'-', stage:'Round of 16', time:'1:00 PM', venue:'MetLife Stadium'},
+      {id:'r16b', date:'2026-07-05', team1:'Spain', team2:'Portugal', group:'-', stage:'Round of 16', time:'4:00 PM', venue:'MetLife Stadium'},
+      {id:'qfa', date:'2026-07-09', team1:'England', team2:'Netherlands', group:'-', stage:'Quarterfinal', time:'4:00 PM', venue:'MetLife Stadium'}
+    ];
+  }
+  it('"Round of 16" date buttons only include Round of 16 dates, not Quarterfinal dates', function(){
+    resetState(); matches=koMatches();
+    document.getElementById('predStageFilter').value='Round of 16';
+    renderPredDateButtons();
+    var h=document.getElementById('predDateBtns').innerHTML;
+    expect(h).toContain('Jul 4'); expect(h).toContain('Jul 5'); expect(h).notToContain('Jul 9');
+  });
+  it('"Quarterfinal" date buttons only include Quarterfinal dates', function(){
+    resetState(); matches=koMatches();
+    document.getElementById('predStageFilter').value='Quarterfinal';
+    renderPredDateButtons();
+    var h=document.getElementById('predDateBtns').innerHTML;
+    expect(h).toContain('Jul 9'); expect(h).notToContain('Jul 4');
   });
 });
 

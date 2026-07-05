@@ -307,7 +307,11 @@
     <div class="filter-row" style="margin-bottom:0">
       <select id="predStageFilter" onchange="predDateFilter='';renderPredictions()" style="font-weight:700;color:var(--navy)">
         <option value="Group Stage">&#128193; Group Stage</option>
-        <option value="Knockout">&#9889; Knockout Rounds</option>
+        <option value="Round of 32">&#9889; Round of 32</option>
+        <option value="Round of 16">&#9889; Round of 16</option>
+        <option value="Quarterfinal">&#9889; Quarter Final</option>
+        <option value="Semifinal">&#9889; Semi Final</option>
+        <option value="Final">&#127942; Final</option>
       </select>
       <select id="predGroupFilter" onchange="renderPredictions()">
         <option value="">All Groups</option>
@@ -1223,18 +1227,23 @@ function renderMatches() {
 }
 
 // ── PREDICTIONS PAGE ──────────────────────────────────────────
+function predStageMatch(m, predStage){
+  if(predStage==='Group Stage')return m.stage==='Group Stage';
+  if(predStage==='Final')return m.stage==='Final'||m.stage==='Bronze Medal';
+  return m.stage===predStage;
+}
 function renderPredDateButtons(){
-  const isKO=document.getElementById('predStageFilter').value==='Knockout';
+  const predStage=document.getElementById('predStageFilter').value;
+  const isKO=predStage!=='Group Stage';
   const row=document.getElementById('predDateRow');
   row.style.display='flex';
   const now=new Date(),ts=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
-  const knockoutStages=['Round of 32','Round of 16','Quarterfinal','Semifinal','Bronze Medal','Final'];
   const R32_CUTOFF='2026-07-03'; // dates after this are R16+, hidden until teams are set
-  const allKODates=[...new Set(matches.filter(m=>isKO?knockoutStages.includes(m.stage):m.stage==='Group Stage').map(m=>m.date))].sort();
+  const allKODates=[...new Set(matches.filter(m=>predStageMatch(m,predStage)).map(m=>m.date))].sort();
   // For KO view: only show post-R32 dates if at least one match on that date has real teams set
   const dates=isKO?allKODates.filter(d=>{
     if(d<=R32_CUTOFF)return true;
-    return matches.filter(m=>m.date===d&&knockoutStages.includes(m.stage)).some(m=>getTeam(m,'team1')!=='TBD'&&getTeam(m,'team2')!=='TBD');
+    return matches.filter(m=>m.date===d&&predStageMatch(m,predStage)).some(m=>getTeam(m,'team1')!=='TBD'&&getTeam(m,'team2')!=='TBD');
   }):allKODates;
   let b='<button onclick="setPredDate(\'\')" style="padding:5px 13px;border-radius:999px;border:1px solid var(--border);cursor:pointer;font-size:.78rem;font-weight:700;background:'+(predDateFilter===''?'var(--navy)':'#fff')+';color:'+(predDateFilter===''?'#fff':'var(--navy)')+'">All</button>';
   dates.forEach(d=>{
@@ -1256,13 +1265,12 @@ function renderPredictions() {
   const predStage=document.getElementById('predStageFilter').value;
   const grp=document.getElementById('predGroupFilter').value;
   const onlyUnpred=document.getElementById('showUnpredicted').checked;
-  const isKnockout=predStage==='Knockout';
-  const knockoutStages=['Round of 32','Round of 16','Quarterfinal','Semifinal','Bronze Medal','Final'];
+  const isKnockout=predStage!=='Group Stage';
   document.getElementById('predGroupFilter').style.display=isKnockout?'none':'';
   const userPreds=predictions[currentUser]||{};
   const list=matches.filter(m=>{
     if(isKnockout){
-      if(!knockoutStages.includes(m.stage))return false;
+      if(!predStageMatch(m,predStage))return false;
       if(predDateFilter&&m.date!==predDateFilter)return false;
       if(onlyUnpred&&userPreds[m.id])return false;
       return true;
@@ -1278,7 +1286,7 @@ function renderPredictions() {
     if (!anyTeamSet) {
       document.getElementById('predictContainer').innerHTML =
         '<div class="alert alert-warn" style="text-align:center;padding:24px">'+
-        '&#9203; Knockout round predictions will be available once the Admin sets the team matchups after Group Stage ends (Jun 25).</div>';
+        '&#9203; '+predStage+' predictions will be available once the Admin sets the team matchups.</div>';
       return;
     }
   }
