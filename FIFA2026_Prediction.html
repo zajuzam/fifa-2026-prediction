@@ -311,6 +311,7 @@
         <option value="Round of 16">&#9889; Round of 16</option>
         <option value="Quarterfinal">&#9889; Quarter Final</option>
         <option value="Semifinal">&#9889; Semi Final</option>
+        <option value="Bronze Medal">&#129353; Third Place</option>
         <option value="Final">&#127942; Final</option>
       </select>
       <select id="predGroupFilter" onchange="renderPredictions()">
@@ -1229,7 +1230,6 @@ function renderMatches() {
 // ── PREDICTIONS PAGE ──────────────────────────────────────────
 function predStageMatch(m, predStage){
   if(predStage==='Group Stage')return m.stage==='Group Stage';
-  if(predStage==='Final')return m.stage==='Final'||m.stage==='Bronze Medal';
   return m.stage===predStage;
 }
 function renderPredDateButtons(){
